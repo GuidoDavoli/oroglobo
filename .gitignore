@@ -36,3 +36,7 @@
 ehthumbs.db
 Thumbs.db
 __*
+
+# Data files #
+######################
+*.nc
