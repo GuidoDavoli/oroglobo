@@ -25,16 +25,28 @@ paths_out = {
     	"data_out":"data_out/"
 }
 
+paths_work = {
+	"workdir":"work/"
+}
+
 files_in = {
-	"netcdf_in_srtm30_global_nan_to_zero":"srtm30_global_nan_to_zero.nc",
-	"netcdf_in_model_grid":"grids_globo_KM078.nc",
-	"netcdf_in_model_mask":"mask_globo_KM078.nc"	
+	"netcdf_srtm30_global_nan_to_zero_0_360":"srtm30_global_nan_to_zero_0_360.nc",
+	"txt_model_grid_lat":"grids_globo_KM078_lat.txt",
+	"txt_model_grid_lon":"grids_globo_KM078_lon.txt"	
 }
 
 files_out = {
 	"img_srtm30_global_nan_to_zero":"srtm30_orog.png",
-	"img_srtm30_smooth":"srtm30_orog_smooth.png",
-	"netcdf_srtm30_smooth":"srtm30_global_nan_to_zero_smoothed.nc"
+	"img_srtm30_smooth":"srtm30_orog_smooth.png"
 }
+
+files_work = {
+	"netcdf_1km_smooth_orog":"srtm30_global_nan_to_zero_smoothed.nc",
+	"netcdf_model_grid_orog":"model_grid_orog_globo_KM078.nc"
+}
+
+
+
+
 
 

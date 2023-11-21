@@ -20,3 +20,14 @@ for x in outfolders:
     if not os.path.exists(outfolder):
         
         os.makedirs(outfolder)
+        
+# if working folders do not exist, create them
+
+outfolders=oropar.paths_work
+
+for x in outfolders:
+    
+    outfolder=outfolders[x]
+    if not os.path.exists(outfolder):
+        
+        os.makedirs(outfolder)

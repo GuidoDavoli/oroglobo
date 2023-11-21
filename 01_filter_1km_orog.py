@@ -47,13 +47,13 @@ def distance(a,b):
 # IMPORT PARAMETERS
 path_data_in=oropar.paths_in["srtm30_data"]
 path_img_out=oropar.paths_out["img_out"]
-path_data_out=oropar.paths_out["netcdf_out"]
+path_data_out=oropar.paths_work["workdir"]
 
-netcdf_orog_in=oropar.files_in["netcdf_in_srtm30_global_nan_to_zero"]
+netcdf_orog_in=oropar.files_in["netcdf_srtm30_global_nan_to_zero_0_360"]
 
 img_srtm30_global_nan_to_zero_out=oropar.files_out["img_srtm30_global_nan_to_zero"]
 img_srtm30_smooth_out=oropar.files_out["img_srtm30_smooth"]
-netcdf_srtm30_smooth_out=oropar.files_out["netcdf_srtm30_smooth"]
+netcdf_1km_smooth_orog_out=oropar.files_work["netcdf_1km_smooth_orog"]
 
 
 
@@ -61,6 +61,7 @@ netcdf_srtm30_smooth_out=oropar.files_out["netcdf_srtm30_smooth"]
 data_orog = xr.open_dataset(path_data_in+netcdf_orog_in)
 lat = data_orog.latitude.values
 lon = data_orog.longitude.values
+
 
 # print
 plt.figure()
@@ -109,7 +110,7 @@ plt.show()
 orogsmooth_da=xr.DataArray(orogsmooth, coords=[('latitude', lat),('longitude', lon)])
 
 # save as netcdf
-orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_srtm30_smooth_out)
+orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out)
 
 
 # su tintin gira in 4 ore
