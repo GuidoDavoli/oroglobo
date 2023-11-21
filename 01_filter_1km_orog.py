@@ -51,8 +51,8 @@ path_data_out=oropar.paths_work["workdir"]
 
 netcdf_orog_in=oropar.files_in["netcdf_srtm30_global_nan_to_zero_0_360"]
 
-img_srtm30_global_nan_to_zero_out=oropar.files_out["img_srtm30_global_nan_to_zero"]
-img_srtm30_smooth_out=oropar.files_out["img_srtm30_smooth"]
+img_1km_global_raw_out=oropar.files_out["img_srtm30_global_nan_to_zero"]
+img_1km_global_smooth_out=oropar.files_out["img_srtm30_smooth"]
 netcdf_1km_smooth_orog_out=oropar.files_work["netcdf_1km_smooth_orog"]
 
 
@@ -67,7 +67,7 @@ lon = data_orog.longitude.values
 plt.figure()
 plt.imshow(data_orog.elev,origin='lower',cmap='terrain',vmin=0,vmax=8500)
 plt.colorbar(location='bottom')
-plt.savefig(path_img_out+img_srtm30_global_nan_to_zero_out,dpi=2400)
+plt.savefig(path_img_out+img_1km_global_raw_out,dpi=2400)
 plt.show()
 
 
@@ -97,12 +97,12 @@ filt=filt/np.sum(filt)  #### tentativo di conservare il "modulo" dell'orografia
                         #### ispirato da https://medium.com/@bdhuma/6-basic-things-to-know-about-convolution-daef5e1bc411
                         #### the idea is to put a normalization factor in front of the filter matrix
 
-orogsmooth = signal.convolve2d(data_orog.elev, filt, mode='same', boundary='wrap').astype(np.float32)
+orogsmooth = signal.convolve2d(data_orog.elev, filt, mode='same', boundary='symm').astype(np.float32) # IF BUNDARY IS SET TO WRAP, SPURIOUS OROGRAPHY AT THE POLES (np IS WRAPPED WIT sp AND VICE VERSA)
 
 plt.figure()
 plt.imshow(orogsmooth,origin='lower',cmap='terrain',vmin=0,vmax=8500)
 plt.colorbar(location='bottom')
-plt.savefig(path_img_out+img_srtm30_smooth_out,dpi=2400)
+plt.savefig(path_img_out+img_1km_global_smooth_out,dpi=2400)
 plt.show()
 
 
