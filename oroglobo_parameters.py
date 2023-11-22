@@ -21,31 +21,37 @@ paths_in = {
 }
 
 paths_out = {
-	"img_out":"img_out/",
-    	"data_out":"data_out/"
+	"img_out":"img_out/*GRIDNAME*/",
+    "data_out":"data_out/*GRIDNAME*/"
 }
 
 paths_work = {
-	"workdir":"work/"
+	"workdir":"work/",
+    "workdir_grid":"work/*GRIDNAME*/"
 }
 
 files_in = {
 	"netcdf_srtm30_global_nan_to_zero_0_360":"srtm30_global_nan_to_zero_0_360.nc",
-	"txt_model_grid_lat":"grids_globo_KM078_lat.txt",
-	"txt_model_grid_lon":"grids_globo_KM078_lon.txt"	
+	"txt_model_grid_lat":"*GRIDNAME*_lat.txt",
+	"txt_model_grid_lon":"*GRIDNAME*_lon.txt"	
 }
 
 files_out = {
-	"img_srtm30_global_nan_to_zero":"srtm30_orog.png",
-	"img_srtm30_smooth":"srtm30_orog_smooth.png"
+	"img_1km_global_orog":"1km_global_orog.png",
+	"img_1km_global_orog_smooth":"1km_global_orog_smooth.png",
+    "img_model_grid_orog":"model_grid_orog_*GRIDNAME*.png",
+    "img_model_grid_operational_orog":"model_grid_operational_orog_*GRIDNAME*.png",
+    "netcdf_model_grid_operational_orog":"model_grid_operational_orog_*GRIDNAME*.nc"
 }
 
 files_work = {
-	"netcdf_1km_smooth_orog":"srtm30_global_nan_to_zero_smoothed.nc",
-	"netcdf_model_grid_orog":"model_grid_orog_globo_KM078.nc"
+	"netcdf_1km_smooth_orog":"1km_global_orog_smooth_to_*GRIDNAME*.nc",
+	"netcdf_model_grid_orog":"model_grid_orog_*GRIDNAME*.nc"
 }
 
-
+model_grid = {
+	"GRIDNAME":"globo_KM078",
+}
 
 
 

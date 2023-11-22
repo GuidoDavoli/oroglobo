@@ -10,24 +10,26 @@ import os
 import oroglobo_parameters as oropar
 
 
+gridname=oropar.model_grid["GRIDNAME"]
+
 # if output folders do not exist, create them
 
-outfolders=oropar.paths_out
+folders=oropar.paths_out
 
-for x in outfolders:
+for x in folders:
     
-    outfolder=outfolders[x]
-    if not os.path.exists(outfolder):
+    folder=folders[x].replace("*GRIDNAME*", gridname) 
+    if not os.path.exists(folder):
         
-        os.makedirs(outfolder)
+        os.makedirs(folder)
         
 # if working folders do not exist, create them
 
-outfolders=oropar.paths_work
+folders=oropar.paths_work
 
-for x in outfolders:
+for x in folders:
     
-    outfolder=outfolders[x]
-    if not os.path.exists(outfolder):
+    folder=folders[x].replace("*GRIDNAME*", gridname)
+    if not os.path.exists(folder):
         
-        os.makedirs(outfolder)
+        os.makedirs(folder)
