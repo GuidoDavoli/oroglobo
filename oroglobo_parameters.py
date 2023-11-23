@@ -32,6 +32,7 @@ paths_work = {
 
 files_in = {
 	"netcdf_srtm30_global_nan_to_zero_0_360":"srtm30_global_nan_to_zero_0_360.nc",
+	"netcdf_model_mask":"masks_*GRIDNAME*.nc",
 	"txt_model_grid_lat":"*GRIDNAME*_lat.txt",
 	"txt_model_grid_lon":"*GRIDNAME*_lon.txt"	
 }
