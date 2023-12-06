@@ -62,7 +62,7 @@ mean_orog_on_model_grid=np.zeros((len(lat_model),len(lon_model)))
 for latindex in range(nlat_model):
     
     
-    # NORTH POLE POINT
+    # SOUTH POLE POINT
     if lat_model[latindex]==-90:
         
         print("South Pole")
@@ -81,7 +81,7 @@ for latindex in range(nlat_model):
         
         
         
-    # SOUTH POLE POINT    
+    # NORTH POLE POINT    
     if lat_model[latindex]==90:
         
         print("North Pole")
