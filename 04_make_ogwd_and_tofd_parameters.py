@@ -77,6 +77,7 @@ txt_model_grid_lat_in=oropar.files_in["txt_model_grid_lat"].replace("*GRIDNAME*"
 txt_model_grid_lon_in=oropar.files_in["txt_model_grid_lon"].replace("*GRIDNAME*", gridname) 
 
 netcdf_model_grid_ogwd_params_out=oropar.files_out["netcdf_model_grid_ogwd_params"].replace("*GRIDNAME*", gridname) 
+netcdf_model_grid_tofd_params_out=oropar.files_out["netcdf_model_grid_tofd_params"].replace("*GRIDNAME*", gridname) 
 netcdf_model_grid_operational_orog_in=oropar.files_out["netcdf_model_grid_operational_orog"].replace("*GRIDNAME*", gridname) 
 tif_copernicus_90m_in=oropar.files_in["tif_copernicus_90m"]
 #img_model_grid_orog_out=oropar.files_out["img_model_grid_orog"].replace("*GRIDNAME*", gridname) 
@@ -323,19 +324,31 @@ for latindex in range(nlat_model):
                 ### calculate the ogwd and tofd parameters from the selected data points inside the model grid cell ###
                 #######################################################################################################
              
-                ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope=orofunc.calculate_ogwd_parameters_in_model_grid_box(model_grid_box_polygon,tif_filenames_list,operational_mean_orog_in_model_grid_box)
+                ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
+                ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
+                tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
+                =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
+                                                                     tif_filenames_list,
+                                                                     operational_mean_orog_in_model_grid_box
+                                                                     )
                 
                 # store the values of the parameters for the particular
                 # grid box in the corresponding 2darray
                 
-                ogwd_F1_on_model_grid[latindex,lonindex]=ogwd_F1
-                ogwd_F2_on_model_grid[latindex,lonindex]=ogwd_F2
-                ogwd_F3_on_model_grid[latindex,lonindex]=ogwd_F3
+                ogwd_F1_on_model_grid[latindex,lonindex]  =ogwd_F1
+                ogwd_F2_on_model_grid[latindex,lonindex]  =ogwd_F2
+                ogwd_F3_on_model_grid[latindex,lonindex]  =ogwd_F3
                 ogwd_hamp_on_model_grid[latindex,lonindex]=ogwd_hamp
-                ogwd_stddev_on_model_grid[latindex,lonindex]=ogwd_stddev
-                ogwd_anisotropy_on_model_grid[latindex,lonindex]=ogwd_anisotropy
+                
+                ogwd_stddev_on_model_grid[latindex,lonindex]     =ogwd_stddev
+                ogwd_anisotropy_on_model_grid[latindex,lonindex] =ogwd_anisotropy
                 ogwd_orientation_on_model_grid[latindex,lonindex]=ogwd_orientation
-                ogwd_slope_on_model_grid[latindex,lonindex]=ogwd_slope
+                ogwd_slope_on_model_grid[latindex,lonindex]      =ogwd_slope
+                
+                tofd_stddev_on_model_grid[latindex,lonindex]     =tofd_stddev
+                tofd_anisotropy_on_model_grid[latindex,lonindex] =tofd_anisotropy
+                tofd_orientation_on_model_grid[latindex,lonindex]=tofd_orientation
+                tofd_slope_on_model_grid[latindex,lonindex]      =tofd_slope
     
 
     
@@ -348,12 +361,19 @@ ogwd_F1_on_model_grid_da=xr.DataArray(ogwd_F1_on_model_grid, coords=[('latitude'
 ogwd_F2_on_model_grid_da=xr.DataArray(ogwd_F2_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
 ogwd_F3_on_model_grid_da=xr.DataArray(ogwd_F3_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
 ogwd_hamp_on_model_grid_da=xr.DataArray(ogwd_hamp_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
+
 ogwd_stddev_on_model_grid_da=xr.DataArray(ogwd_stddev_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
 ogwd_anisotropy_on_model_grid_da=xr.DataArray(ogwd_anisotropy_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
 ogwd_orientation_on_model_grid_da=xr.DataArray(ogwd_orientation_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
 ogwd_slope_on_model_grid_da=xr.DataArray(ogwd_slope_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
 
-### create dataset
+tofd_stddev_on_model_grid_da=xr.DataArray(tofd_stddev_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
+tofd_anisotropy_on_model_grid_da=xr.DataArray(tofd_anisotropy_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
+tofd_orientation_on_model_grid_da=xr.DataArray(tofd_orientation_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
+tofd_slope_on_model_grid_da=xr.DataArray(tofd_slope_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
+
+
+### create datasets
 ogwd_parameters_ds=ogwd_F1_on_model_grid_da.to_dataset(name = 'ogwd_F1')
 ogwd_parameters_ds['ogwd_F2']=ogwd_F2_on_model_grid_da
 ogwd_parameters_ds['ogwd_F3']=ogwd_F3_on_model_grid_da
@@ -363,5 +383,11 @@ ogwd_parameters_ds['ogwd_anisotropy']=ogwd_anisotropy_on_model_grid_da
 ogwd_parameters_ds['ogwd_orientation']=ogwd_orientation_on_model_grid_da
 ogwd_parameters_ds['ogwd_slope']=ogwd_slope_on_model_grid_da
 
+tofd_parameters_ds=tofd_stddev_on_model_grid_da.to_dataset(name = 'tofd_stddev')
+tofd_parameters_ds['tofd_anisotropy']=tofd_anisotropy_on_model_grid_da
+tofd_parameters_ds['tofd_orientation']=tofd_orientation_on_model_grid_da
+tofd_parameters_ds['tofd_slope']=tofd_slope_on_model_grid_da
+
 ### save to netcdf
 ogwd_parameters_ds.to_netcdf(path_data_out+netcdf_model_grid_ogwd_params_out)
+tofd_parameters_ds.to_netcdf(path_data_out+netcdf_model_grid_tofd_params_out)
