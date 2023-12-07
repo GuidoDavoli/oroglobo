@@ -149,6 +149,8 @@ def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
 
 def filter_lowpass_2d_van_niekerk(lon,lat,data2d):
     
+    # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
+    
     ### ADAPTED FROM THE CODE PUBLICHED WITH THE PAPER BY VAN NIEKERK, 2021, QJRMS
     
     lat_rad=np.radians(lat)
@@ -184,17 +186,48 @@ def filter_lowpass_2d_van_niekerk(lon,lat,data2d):
     hfilt = np.real(np.fft.ifft2(hhat*res))
     
     # SEE THE ORIGINAL CODE TO COMPUTE HAMP HERE
+    # no, computed in other function
     
     return hfilt
 
 
-def calculate_F1_F2_F3_hamp():
+def calculate_F1_F2_F3_hamp(lon,lat,data2d):
     
-    # prendi da codice van niekerk
+    # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
+
+    # preso da codice van niekerk (adapted)
     
-    return
+    hmin = data2d.min()
+    hmax = data2d.max()
+    ogwd_hamp = hmax - hmin
+    
+    radius=6371000 # meters
+    
+    lat_rad=np.radians(lat)
+    lon_rad=np.radians(lon)
+    Nx = lon.shape[0]
+    My = lat.shape[0]
+    dx = radius*np.cos(lat_rad[int(My/2.)])*np.abs(lon_rad[1] - lon_rad[0])
+    dy = radius*np.abs(lat_rad[1] - lat_rad[0])
+    hhat = np.fft.fft2(data2d)*dx*dy/(4*np.pi**2)
+    hhat[0,0] = 0
+    k = 2*np.pi*np.fft.fftfreq(Nx,dx)
+    l = 2*np.pi*np.fft.fftfreq(My,dy)
+    kk, ll = np.meshgrid(k,l)
+    ktot = (kk**2 + ll**2)**0.5
+    dk = np.abs(k[1] - k[0])
+    dl = np.abs(l[1] - l[0])
+    area = My*dy * Nx*dx
+    ogwd_F1 = np.nansum( ((4*np.pi**2 * kk**2 * np.abs(hhat)**2 * dk * dl / ktot) /area) )
+    ogwd_F2 = np.nansum( ((4*np.pi**2 * kk*ll * np.abs(hhat)**2 * dk * dl / ktot) /area) )
+    ogwd_F3 = np.nansum( ((4*np.pi**2 * ll**2 * np.abs(hhat)**2 * dk * dl / ktot) /area) )
+    #sd = np.nansum(((4*np.pi**2 * np.abs(hhat)**2 * dk * dl ) /area) )
+    
+    return ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp
 
 def calculate_stddev_anis_orient_slope(data2d):
+    
+    # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
     
     """
     SEE https://www.ecmwf.int/sites/default/files/elibrary/2021/20198-ifs-documentation-cy47r3-part-vi-physical-processes.pdf
@@ -211,7 +244,7 @@ def calculate_stddev_anis_orient_slope(data2d):
 
     grad_y=-np.gradient(data2d, axis=0)   ### SEE EXPLANATION BEFORE
     grad_x=np.gradient(data2d, axis=1)
-
+    """
     plt.figure()
     plt.imshow(grad_x,cmap='seismic',vmin=-100,vmax=100)
     plt.colorbar()
@@ -219,7 +252,7 @@ def calculate_stddev_anis_orient_slope(data2d):
     plt.figure()
     plt.imshow(grad_y,cmap='seismic',vmin=-100,vmax=100)
     plt.colorbar()
-
+    """
     K=0.5* ( np.mean(np.square(grad_x)) + np.mean(np.square(grad_y)) )
 
     L=0.5* ( np.mean(np.square(grad_x)) - np.mean(np.square(grad_y)) )
@@ -332,6 +365,10 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
     subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
     subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
+    
+    lon_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.longitude.values
+    lat_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.latitude.values
+    
     """    
     # plot for debug
     subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
@@ -343,26 +380,20 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     # from that points, calculate the orographic parameters for the grid box
     
         # call specific functions for each parameter
-    
-    X=(model_grid_box_westboundary+
-        model_grid_box_eastboundary+
-        model_grid_box_southboundary+
-        model_grid_box_northboundary)/4 # just a crazy number to assign as a test
    
-    ogwd_F1=X
-    ogwd_F2=X
-    ogwd_F3=X
-    ogwd_hamp=X
+    ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp=calculate_F1_F2_F3_hamp(
+                                        lon_inside_gridbox,
+                                        lat_inside_gridbox,
+                                        subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
+                                        )
     
-    ogwd_stddev=X
-    ogwd_anisotropy=X
-    ogwd_orientation=X
-    ogwd_slope=X
+    ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope=calculate_stddev_anis_orient_slope(
+                                                                subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
+                                                                )
     
-    tofd_stddev=X
-    tofd_anisotropy=X
-    tofd_orientation=X
-    tofd_slope=X
+    tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope=calculate_stddev_anis_orient_slope(
+                                                                subgrid_elev_inside_gridbox_5kmfilt_highpass_da.data
+                                                                )
     
     # return the values of the parameters
     
