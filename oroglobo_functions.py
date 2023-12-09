@@ -258,8 +258,6 @@ def calculate_stddev_anis_orient_slope(data2d):
     L=0.5* ( np.mean(np.square(grad_x)) - np.mean(np.square(grad_y)) )
 
     M=np.mean( np.multiply(grad_x,grad_y) )
-
-    ERRORE È QUI PERCHÈ ORIENT_RAD NON È DEFINITO SE M=0 o L=0
     
     if M==0 or L==0:
         
