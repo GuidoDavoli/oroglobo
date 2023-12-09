@@ -259,6 +259,12 @@ def calculate_stddev_anis_orient_slope(data2d):
 
     M=np.mean( np.multiply(grad_x,grad_y) )
 
+    ERRORE È QUI PERCHÈ ORIENT_RAD NON È DEFINITO SE M=0 o L=0
+    
+    if M==0 or L==0:
+        
+        orient_rad=np.nan # it means: undefined
+    
     if L>0:
         
         orient_rad= 0.5*np.arctan(M/L)   # È RISP AD ASSE X cartesiano, in radianti
