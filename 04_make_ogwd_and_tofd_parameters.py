@@ -119,6 +119,7 @@ lon_model=lon_model-180
 
 for latindex in range(nlat_model):
     
+    #print(f'Time: {time.time() - start}')
     
     # SOUTH POLE POINT
     if lat_model[latindex]==-90:
@@ -142,7 +143,9 @@ for latindex in range(nlat_model):
         model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
         tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
         print(tif_filenames_list,"SONO IO 1")
-        
+    
+    #print(f'Time: {time.time() - start}')
+    
     # NORTH POLE POINT    
     if lat_model[latindex]==90:
         
@@ -166,7 +169,8 @@ for latindex in range(nlat_model):
         tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
         print(tif_filenames_list,"SONO IO 2")
 
-
+    #print(f'Time: {time.time() - start}')
+    
     # THESE ARE "NORMAL" LAT-LON POINTS (NOT ON THE POLE).
     if lat_model[latindex]>-90 and lat_model[latindex]<90:
         
@@ -179,6 +183,7 @@ for latindex in range(nlat_model):
             dlat_north=abs(lat_model[latindex]-lat_model[latindex+1])/2
             dlat_south=abs(lat_model[latindex]-lat_model[latindex-1])/2
             
+            #print(f'Time: {time.time() - start}')
             
             # FIRST LONGITUDE POINT (IN A "-180/180" GRID)
             if lonindex==0:
@@ -238,6 +243,7 @@ for latindex in range(nlat_model):
                     print(tif_filenames_list,"SONO IO 4")
                     
                     
+            #print(f'Time: {time.time() - start}')
             
             # LAST LONGITUDE POINT (IN A "-180/180" GRID)
             if lonindex==(nlon_model-1):
@@ -297,9 +303,12 @@ for latindex in range(nlat_model):
                     tif_filenames_list=tif_filenames_list_1+tif_filenames_list_2
                     print(tif_filenames_list,"SONO IO 6")
             
+            #print(f'Time: {time.time() - start}')
             
             # "CENTRAL" (NOT FIRST, NOT LAST) LONGITUDE POINT (IN A "-180/+180" GRID) ("EASY" POINTS)
             if lonindex>0 and lonindex<nlon_model-1: 
+                
+                #print(f'Time: {time.time() - start} | 1')
                 
                 # i am not at the first or last model grid longitude
             
@@ -315,12 +324,16 @@ for latindex in range(nlat_model):
                 # determine which dem tiles to open.
                 # the DEM tiles are on a 1x1 deg regular grid 
                 model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
+                #print(f'Time: {time.time() - start} | 1a')
                 tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
+                #print(f'Time: {time.time() - start} | 1b')
                 # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                 # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
                 operational_mean_orog_in_model_grid_box=np.float32(operational_orog_on_model_grid_da.sel(latitude=lat_model[latindex],longitude=LatLon23.Longitude(lon_model[lonindex]).range360(),method="nearest").elev.data)
-                print(tif_filenames_list,"SONO IO 7")
-                               
+                #print(tif_filenames_list,"SONO IO 7")
+                
+                #print(f'Time: {time.time() - start} | 2')
+                
                 #######################################################################################################
                 ### calculate the ogwd and tofd parameters from the selected data points inside the model grid cell ###
                 #######################################################################################################
@@ -332,7 +345,7 @@ for latindex in range(nlat_model):
                                                                      tif_filenames_list,
                                                                      operational_mean_orog_in_model_grid_box
                                                                      )
-                
+                #print(f'Time: {time.time() - start} | 3')
                 # store the values of the parameters for the particular
                 # grid box in the corresponding 2darray
                 
@@ -351,7 +364,7 @@ for latindex in range(nlat_model):
                 tofd_orientation_on_model_grid[latindex,lonindex]=tofd_orientation
                 tofd_slope_on_model_grid[latindex,lonindex]      =tofd_slope
     
-
+                #print(f'Time: {time.time() - start} | 4')
     
 # at the end, when all 2d arrays of parameters are filled, save netcdf on disk
 

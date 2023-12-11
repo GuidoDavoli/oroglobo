@@ -15,6 +15,8 @@ import rioxarray as rioxr
 import xarray as xr
 import os
 import matplotlib.pyplot as plt
+import time
+start = time.time()
 
 
 # IMPORT PARAMETERS
@@ -98,16 +100,36 @@ def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
     """
     this function receives a shapely polygon representing the model gridbox
     and returns the list of filenames of the copernicus 90m DEM tiles
-    which intersect the model gridbox
+    which intersect the model gridbox.
+    
+    the simplest way to do it is to scan all the globe one deg by one deg
+    (copernicus tiles are 1x1 degs.) and check intersections with the 
+    model_grid_box_polygon.
+    But this is a waste of computational time (a lot of times I have no 
+    intersections); to avoid time waste, I check intersections only on a region
+    given by the boundaries of the model_grid_box_polygon + a frame around it
     """
+    
+    minlon,minlat,maxlon,maxlat=model_grid_box_polygon.bounds
+    
+    # I AM ASSUMING A -180/+180 GRID
+    
+    # floor: nearest integer before
+    # ceil:  nearest integer after    
+    minlon=int(max(np.floor(minlon)-2,-180))
+    minlat=int(max(np.floor(minlat)-2,-90))
+    maxlon=int(min(np.ceil(maxlon)+2,180))
+    maxlat=int(min(np.ceil(maxlat)+2,90))
     
     tiles_filenames_list=[]
 
-    for southboundary_tile in range(-90,90): # numbers in [-90:89]
+    #for southboundary_tile in range(-90,90): # numbers in [-90:89]
+    for southboundary_tile in range(minlat,maxlat+1): # numbers in [minlat:maxlat]
             
         northboundary_tile=southboundary_tile+1
-
-        for westboundary_tile in range(-180,180): # numbers in [-180,179]
+        
+        #for westboundary_tile in range(-180,180): # numbers in [-180,179]
+        for westboundary_tile in range(minlon,maxlon+1): # numbers in [minlon,maxlon]
         
             eastboundary_tile=westboundary_tile+1
             
@@ -117,7 +139,7 @@ def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
             if model_grid_box_polygon.intersects(tile_polygon):
                 
                 # convert to ""4 hemispheres" format and open the file
-                
+                                
                 tile_SW_vertex=LatLon23.LatLon(lat=southboundary_tile,lon=westboundary_tile)
                 lat_string=tile_SW_vertex.to_string('d% %H')[0]
                 lon_string=tile_SW_vertex.to_string('d% %H')[1]
@@ -321,86 +343,104 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
             # in the following, missing tiles will be treated as elev=0 
             tif_data_list.append(tif_data)
 
-    # exploit xarray to order the tiles by lat and lon 
-    all_tif_data_ds=xr.combine_by_coords(tif_data_list,fill_value=0) # where no data (sea) --> =0
+    if len(tif_data_list)>0: # if at least one tile exist --> if there is land, i have data
+
+        # exploit xarray to order the tiles by lat and lon 
+        all_tif_data_ds=xr.combine_by_coords(tif_data_list,fill_value=0) # where no data (sea) --> =0
+        
+        # calculate the subgrid orog, that is the deviation of the high res data from the 
+        # model operational mean grid 
+        subgrid_elev_all_tif_data_ds=all_tif_data_ds-operational_mean_orog_in_model_grid_box
+        """
+        # plot for debug
+        all_tif_data_ds.elev.plot(cmap='terrain',vmin=0,vmax=4000)
+        plt.show()
+        subgrid_elev_all_tif_data_ds.elev.plot(cmap='RdBu_r',vmin=-200,vmax=200)
+        plt.show()
+        """
+        # filter out scales > 5km    
+        lon=subgrid_elev_all_tif_data_ds.x.values
+        lat=subgrid_elev_all_tif_data_ds.y.values
+        data2d=subgrid_elev_all_tif_data_ds.elev.data[0]
+        subgrid_elev_all_tif_data_5kmfilt_lowpass=filter_lowpass_2d_van_niekerk(lon, lat, data2d)
+        
+        # make a new xarray dataarray with lat, lon, filtered data
+        subgrid_elev_all_tif_data_5kmfilt_lowpass_da=xr.DataArray(
+            subgrid_elev_all_tif_data_5kmfilt_lowpass,
+            coords=[('latitude', lat),('longitude', lon)])
+        """
+        # plot for debug
+        subgrid_elev_all_tif_data_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
+        plt.show()
+        """
+        # derive scales <5km as a difference between unfiltered and filtered >5km:
+        subgrid_elev_all_tif_data_5kmfilt_highpass=subgrid_elev_all_tif_data_ds.elev.data[0]-subgrid_elev_all_tif_data_5kmfilt_lowpass
+        
+        # make a new xarray dataarray with lat, lon, high pass data
+        subgrid_elev_all_tif_data_5kmfilt_highpass_da=xr.DataArray(
+            subgrid_elev_all_tif_data_5kmfilt_highpass,
+            coords=[('latitude', lat),('longitude', lon)])
+        """
+        # plot for debug
+        subgrid_elev_all_tif_data_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
+        plt.show()
+        """
+        # cut out only the point really inside the model grid box
+        model_grid_box_westboundary = model_grid_box_polygon.bounds[0]
+        model_grid_box_southboundary= model_grid_box_polygon.bounds[1]
+        model_grid_box_eastboundary = model_grid_box_polygon.bounds[2]
+        model_grid_box_northboundary= model_grid_box_polygon.bounds[3]
+        #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
+        subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
+        subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
+        
+        lon_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.longitude.values
+        lat_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.latitude.values
+        
+        """    
+        # plot for debug
+        subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
+        plt.show()
+        subgrid_elev_inside_gridbox_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
+        plt.show()
+        """
+        
+        # from that points, calculate the orographic parameters for the grid box
+        
+            # call specific functions for each parameter
+       
+        ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp=calculate_F1_F2_F3_hamp(
+                                            lon_inside_gridbox,
+                                            lat_inside_gridbox,
+                                            subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
+                                            )
+        
+        ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope=calculate_stddev_anis_orient_slope(
+                                                                    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
+                                                                    )
+        
+        tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope=calculate_stddev_anis_orient_slope(
+                                                                    subgrid_elev_inside_gridbox_5kmfilt_highpass_da.data
+                                                                    )
+        
+        
     
-    # calculate the subgrid orog, that is the deviation of the high res data from the 
-    # model operational mean grid 
-    subgrid_elev_all_tif_data_ds=all_tif_data_ds-operational_mean_orog_in_model_grid_box
-    """
-    # plot for debug
-    all_tif_data_ds.elev.plot(cmap='terrain',vmin=0,vmax=4000)
-    plt.show()
-    subgrid_elev_all_tif_data_ds.elev.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    """
-    # filter out scales > 5km    
-    lon=subgrid_elev_all_tif_data_ds.x.values
-    lat=subgrid_elev_all_tif_data_ds.y.values
-    data2d=subgrid_elev_all_tif_data_ds.elev.data[0]
-    subgrid_elev_all_tif_data_5kmfilt_lowpass=filter_lowpass_2d_van_niekerk(lon, lat, data2d)
-    
-    # make a new xarray dataarray with lat, lon, filtered data
-    subgrid_elev_all_tif_data_5kmfilt_lowpass_da=xr.DataArray(
-        subgrid_elev_all_tif_data_5kmfilt_lowpass,
-        coords=[('latitude', lat),('longitude', lon)])
-    """
-    # plot for debug
-    subgrid_elev_all_tif_data_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    """
-    # derive scales <5km as a difference between unfiltered and filtered >5km:
-    subgrid_elev_all_tif_data_5kmfilt_highpass=subgrid_elev_all_tif_data_ds.elev.data[0]-subgrid_elev_all_tif_data_5kmfilt_lowpass
-    
-    # make a new xarray dataarray with lat, lon, high pass data
-    subgrid_elev_all_tif_data_5kmfilt_highpass_da=xr.DataArray(
-        subgrid_elev_all_tif_data_5kmfilt_highpass,
-        coords=[('latitude', lat),('longitude', lon)])
-    """
-    # plot for debug
-    subgrid_elev_all_tif_data_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
-    plt.show()
-    """
-    # cut out only the point really inside the model grid box
-    model_grid_box_westboundary = model_grid_box_polygon.bounds[0]
-    model_grid_box_southboundary= model_grid_box_polygon.bounds[1]
-    model_grid_box_eastboundary = model_grid_box_polygon.bounds[2]
-    model_grid_box_northboundary= model_grid_box_polygon.bounds[3]
-    #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
-    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
-    subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
-    
-    lon_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.longitude.values
-    lat_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.latitude.values
-    
-    """    
-    # plot for debug
-    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    subgrid_elev_inside_gridbox_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
-    plt.show()
-    """
-    
-    # from that points, calculate the orographic parameters for the grid box
-    
-        # call specific functions for each parameter
-   
-    ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp=calculate_F1_F2_F3_hamp(
-                                        lon_inside_gridbox,
-                                        lat_inside_gridbox,
-                                        subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
-                                        )
-    
-    ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope=calculate_stddev_anis_orient_slope(
-                                                                subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
-                                                                )
-    
-    tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope=calculate_stddev_anis_orient_slope(
-                                                                subgrid_elev_inside_gridbox_5kmfilt_highpass_da.data
-                                                                )
-    
+    else: # if there are no data on disk --> the grid box is entirely on ocean
+        
+        ogwd_F1=np.nan
+        ogwd_F2=np.nan
+        ogwd_F3=np.nan
+        ogwd_hamp=np.nan
+        ogwd_stddev=np.nan
+        ogwd_anisotropy=np.nan
+        ogwd_orientation=np.nan
+        ogwd_slope=np.nan
+        tofd_stddev=np.nan
+        tofd_anisotropy=np.nan
+        tofd_orientation=np.nan
+        tofd_slope=np.nan
+        
     # return the values of the parameters
-    
     return ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
            ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
            tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope
