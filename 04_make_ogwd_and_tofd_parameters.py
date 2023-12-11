@@ -55,6 +55,7 @@ TREAT THE GLOBE AS A 2D GRID, ANCHE A SX DI -180 E A DX DI +180
 """
 
 import numpy as np
+np.seterr(divide='ignore', invalid='ignore')
 import xarray as xr
 import rioxarray as rioxr
 import oroglobo_parameters as oropar
