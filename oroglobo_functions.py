@@ -107,19 +107,20 @@ def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
     model_grid_box_polygon.
     But this is a waste of computational time (a lot of times I have no 
     intersections); to avoid time waste, I check intersections only on a region
-    given by the boundaries of the model_grid_box_polygon + a frame around it
+    given by the boundaries of the model_grid_box_polygon + a frame around it.
+    the frame is thickness is "framethickness" (in degrees)
     """
     
     minlon,minlat,maxlon,maxlat=model_grid_box_polygon.bounds
-    
+    framethickness=2
     # I AM ASSUMING A -180/+180 GRID
     
     # floor: nearest integer before
     # ceil:  nearest integer after    
-    minlon=int(max(np.floor(minlon)-2,-180))
-    minlat=int(max(np.floor(minlat)-2,-90))
-    maxlon=int(min(np.ceil(maxlon)+2,180))
-    maxlat=int(min(np.ceil(maxlat)+2,90))
+    minlon=int(max(np.floor(minlon)-framethickness,-180))
+    minlat=int(max(np.floor(minlat)-framethickness,-90))
+    maxlon=int(min(np.ceil(maxlon)+framethickness,180))
+    maxlat=int(min(np.ceil(maxlat)+framethickness,90))
     
     tiles_filenames_list=[]
 
@@ -135,8 +136,13 @@ def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
             
             tile_polygon=Polygon([(westboundary_tile,southboundary_tile), (eastboundary_tile,southboundary_tile), (eastboundary_tile,northboundary_tile), (westboundary_tile,northboundary_tile)])
             
-            # both the model grid and the tile grid are on a common -90,90;180,180 grid, so i can check intersection with shapely
-            if model_grid_box_polygon.intersects(tile_polygon):
+            # both the model grid and the tile grid are on a common -90,90;180,180 grid, so i can check intersection (overlap) with shapely
+            # I USE OVERLAPS&cCONTAINS INSTEAD OF INTERSECTS IN ORDER TO AVOID "TRUE" IF THE TWO PLYGONS SIMPLY "TOUCHES" EACH OTHER
+            # BUT THERE IS NO A TRUE OVERLAP (THAT IS THERE ARE NO POINTS OF THE TILE REALLY INSIDE THE MODEL GRID BOX).
+            # THIS IS NEEDED TO AVOID ERRORS IN THE NEXT CALCULATIONS.
+            
+            # TRY ALSO: INTERSECT AND !TOUCH
+            if model_grid_box_polygon.overlaps(tile_polygon) or model_grid_box_polygon.contains(tile_polygon):
                 
                 # convert to ""4 hemispheres" format and open the file
                                 
@@ -334,6 +340,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     """
     
     tif_data_list=[]
+    tif_dlon_list=[]
     
     for tif_filename in tif_filenames_list:
         
@@ -341,13 +348,50 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
             tif_data = rioxr.open_rasterio(tif_filename)[:,:-1,:-1].to_dataset(name='elev')           
             # if the tile is not on disk, it means that it is all on sea --> do not consider it
             # in the following, missing tiles will be treated as elev=0 
+            tif_dlon=tif_data.x.values[1]-tif_data.x.values[0]
+            
             tif_data_list.append(tif_data)
+            tif_dlon_list.append(tif_dlon)
 
     if len(tif_data_list)>0: # if at least one tile exist --> if there is land, i have data
-
-        # exploit xarray to order the tiles by lat and lon 
-        all_tif_data_ds=xr.combine_by_coords(tif_data_list,fill_value=0) # where no data (sea) --> =0
         
+        # i have to check if the selected tif data have all the same "dlon"
+        # (i.e. the same lomgitudinal coordinates). Copernicus data have different
+        # dlon in different latitudinal bands in order to mantain an approx. costant
+        # spacing in meters. So when the model gridbox crosses specific latitudes
+        # (like +-85, +-80, +-70...+-50) tif files with different longitudinal
+        # coordinates and spacing are loaded; they must be "homogenized"
+        # before passing it to xr.combine_by_coords
+        
+        # are all dlons equal or not?
+        
+        if ( tif_dlon_list.count(tif_dlon_list[0]) == len(tif_dlon_list) ) == False:
+            
+            # if they are not all equal, proceed by steps:
+                
+            # 1) combine with combine_by_coords and fill with nan where there are no data. 
+            #    this means that will became nan:
+            #    - points on the sea
+            #    - the "spurious/duplicate" points that arise beacuse the grids are not equal 
+            #      (combine_by_coords create a grid with all longitudes in the two grids)  
+            all_tif_data_ds=xr.combine_by_coords(tif_data_list,fill_value=np.nan)
+            
+            # 2) fill the nans forward and backward with the nearest value after and before (limit="1 pixel")
+            #   (since in the worst case the fine grid spacing is half of the coarse grid spacing, it is supposed that limit=1 before and after is enough to fill gaps  
+            #   some sea points (the closest to the coasts) are "lost" (i.e. the became >0) with this procedure 
+            all_tif_data_ds=all_tif_data_ds.bfill(dim='x',limit=1)
+            all_tif_data_ds=all_tif_data_ds.ffill(dim='x',limit=1)
+            
+            # 3) transform all the nan still present to zero (i suppose that the remainig nans are sea)
+            all_tif_data_ds=all_tif_data_ds.fillna(0)
+            
+        else:
+            
+            # if yes, data are have uniform grids, so
+            # exploit xarray to order the tiles by lat and lon; simply fill with zero where there are no data 
+            # it happens olny on the sea)
+            all_tif_data_ds=xr.combine_by_coords(tif_data_list,fill_value=0) # where no data (sea) --> =0
+            
         # calculate the subgrid orog, that is the deviation of the high res data from the 
         # model operational mean grid 
         subgrid_elev_all_tif_data_ds=all_tif_data_ds-operational_mean_orog_in_model_grid_box
@@ -394,6 +438,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
         subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
         subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
         
+        
         lon_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.longitude.values
         lat_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.latitude.values
         
@@ -407,7 +452,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
         
         # from that points, calculate the orographic parameters for the grid box
         
-            # call specific functions for each parameter
+        # call specific functions for each group of parameters
        
         ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp=calculate_F1_F2_F3_hamp(
                                             lon_inside_gridbox,
