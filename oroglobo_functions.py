@@ -137,12 +137,12 @@ def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
             tile_polygon=Polygon([(westboundary_tile,southboundary_tile), (eastboundary_tile,southboundary_tile), (eastboundary_tile,northboundary_tile), (westboundary_tile,northboundary_tile)])
             
             # both the model grid and the tile grid are on a common -90,90;180,180 grid, so i can check intersection (overlap) with shapely
-            # I USE OVERLAPS&cCONTAINS INSTEAD OF INTERSECTS IN ORDER TO AVOID "TRUE" IF THE TWO PLYGONS SIMPLY "TOUCHES" EACH OTHER
+            # I USE OVERLAPS&cCONTAINS&WITHIN INSTEAD OF INTERSECTS IN ORDER TO AVOID "TRUE" IF THE TWO PLYGONS SIMPLY "TOUCHES" EACH OTHER
             # BUT THERE IS NO A TRUE OVERLAP (THAT IS THERE ARE NO POINTS OF THE TILE REALLY INSIDE THE MODEL GRID BOX).
             # THIS IS NEEDED TO AVOID ERRORS IN THE NEXT CALCULATIONS.
             
             # TRY ALSO: INTERSECT AND !TOUCH
-            if model_grid_box_polygon.overlaps(tile_polygon) or model_grid_box_polygon.contains(tile_polygon):
+            if model_grid_box_polygon.overlaps(tile_polygon) or model_grid_box_polygon.contains(tile_polygon) or model_grid_box_polygon.within(tile_polygon):
                 
                 # convert to ""4 hemispheres" format and open the file
                                 
