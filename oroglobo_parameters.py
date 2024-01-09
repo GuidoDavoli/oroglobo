@@ -55,7 +55,7 @@ files_work = {
 }
 
 model_grid = {
-	"GRIDNAME":"globo_KM312",
+	"GRIDNAME":"globo_KM078",
 }
 
 

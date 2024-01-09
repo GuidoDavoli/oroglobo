@@ -348,7 +348,8 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
             tif_data = rioxr.open_rasterio(tif_filename)[:,:-1,:-1].to_dataset(name='elev')           
             # if the tile is not on disk, it means that it is all on sea --> do not consider it
             # in the following, missing tiles will be treated as elev=0 
-            tif_dlon=tif_data.x.values[1]-tif_data.x.values[0]
+            tif_dlon=abs(tif_data.x.values[1]-tif_data.x.values[0]) # this can vary across the copernicus dataset
+            tif_dlat=abs(tif_data.y.values[1]-tif_data.y.values[0]) # this is always the same, data are uniform in latitude
             
             tif_data_list.append(tif_data)
             tif_dlon_list.append(tif_dlon)
@@ -356,7 +357,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     if len(tif_data_list)>0: # if at least one tile exist --> if there is land, i have data
         
         # i have to check if the selected tif data have all the same "dlon"
-        # (i.e. the same lomgitudinal coordinates). Copernicus data have different
+        # (i.e. the same longitudinal coordinates). Copernicus data have different
         # dlon in different latitudinal bands in order to mantain an approx. costant
         # spacing in meters. So when the model gridbox crosses specific latitudes
         # (like +-85, +-80, +-70...+-50) tif files with different longitudinal
@@ -383,6 +384,27 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
             all_tif_data_ds=all_tif_data_ds.ffill(dim='x',limit=1)
             
             # 3) transform all the nan still present to zero (i suppose that the remainig nans are sea)
+            all_tif_data_ds=all_tif_data_ds.fillna(0)
+            
+            # 4) get the larger dlon (lower resolution)
+            tif_larger_dlon=np.array(tif_dlon_list).max()
+            
+            # 5) get the bounds of the tiff data all together
+            all_tiff_westboundary= all_tif_data_ds.x.values[0]
+            all_tiff_eastboundary= all_tif_data_ds.x.values[-1]
+            all_tiff_northboundary=all_tif_data_ds.y.values[0]
+            all_tiff_southboundary=all_tif_data_ds.y.values[-1]
+            
+            # 6) build lat and lon arrays, equally spaced with spacing tif_larger_dlon,
+            #    which will be used to resample the data
+            newlat_resample=np.arange(all_tiff_northboundary,all_tiff_southboundary-0.001,-tif_dlat) # +0.001 to not exclude the last point
+            newlon_resample=np.arange(all_tiff_westboundary,all_tiff_eastboundary+0.001,tif_larger_dlon) # +0.001 to not exclude the last point
+            
+            # 7) resample the data at uniform resolution, consistent with the 
+            # lowest resolution tile
+            
+            all_tif_data_ds=all_tif_data_ds.interp(coords={"x": newlon_resample, "y": newlat_resample})
+            # again set nan to zero, if any
             all_tif_data_ds=all_tif_data_ds.fillna(0)
             
         else:
