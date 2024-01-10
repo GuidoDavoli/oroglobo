@@ -16,6 +16,7 @@ import xarray as xr
 import os
 import matplotlib.pyplot as plt
 import time
+from haversine import haversine
 start = time.time()
 
 
@@ -66,7 +67,7 @@ def filter_ECMWF(d,D):
     
     #### prepare the 2d square array representing the filter (scale in pixel)
     #### the filter is a square with an odd number of pixels (L)
-    #### but L is determinig in different ways depending on D (even or odd)
+    #### but L is determined in different ways depending on D (even or odd)
     
     if (D%2)==0: # D is even
     
@@ -219,24 +220,29 @@ def filter_lowpass_2d_van_niekerk(lon,lat,data2d):
     return hfilt
 
 
-def calculate_F1_F2_F3_hamp(lon,lat,data2d):
+def calculate_F1_F2_F3_hamp(lon,lat,data2d,dx,dy):
     
     # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
 
     # preso da codice van niekerk (adapted)
     
+    # dx,dy are in METERS and calculated outside the function 
+    # (alternative method wrt van niekerk)
+    
     hmin = data2d.min()
     hmax = data2d.max()
     ogwd_hamp = hmax - hmin
     
-    radius=6371000 # meters
-    
-    lat_rad=np.radians(lat)
-    lon_rad=np.radians(lon)
+    #### Commented since dx and dy are now calculated outside and received as parameters
+    #radius=6371000 # meters
+    #lat_rad=np.radians(lat)
+    #lon_rad=np.radians(lon)
     Nx = lon.shape[0]
     My = lat.shape[0]
-    dx = radius*np.cos(lat_rad[int(My/2.)])*np.abs(lon_rad[1] - lon_rad[0])
-    dy = radius*np.abs(lat_rad[1] - lat_rad[0])
+    #dx = radius*np.cos(lat_rad[int(My/2.)])*np.abs(lon_rad[1] - lon_rad[0])
+    #dy = radius*np.abs(lat_rad[1] - lat_rad[0])
+    
+    
     hhat = np.fft.fft2(data2d)*dx*dy/(4*np.pi**2)
     hhat[0,0] = 0
     k = 2*np.pi*np.fft.fftfreq(Nx,dx)
@@ -253,7 +259,7 @@ def calculate_F1_F2_F3_hamp(lon,lat,data2d):
     
     return ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp
 
-def calculate_stddev_anis_orient_slope(data2d):
+def calculate_stddev_anis_orient_slope(data2d,dx,dy):
     
     # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
     
@@ -266,12 +272,15 @@ def calculate_stddev_anis_orient_slope(data2d):
     IN NUMYPY, THE '0' AXIS IS VERTICAL ('ROWS') GOING FROM UP TO BOTTOM (LIKE A '-Y' CARTESIAN AXIS);
                THE '1' AXIS IS HORIZONTAL ('COLUMNS') GOING FROM LEFT TO RIGHT (LIKE THE 'X' CARTESIAN AXIS).
                EXACTLY HOW IMSHOW PLOTS THE AXIS LABELS BY DEFAULT
+               
+    dx and dy are the lenght of each pixel in the two dimensions (y=lat, x=lon), in METERS
+               
     """
     
     stddev=np.std(data2d)
 
-    grad_y=-np.gradient(data2d, axis=0)   ### SEE EXPLANATION BEFORE
-    grad_x=np.gradient(data2d, axis=1)
+    grad_y=-np.gradient(data2d, dy, axis=0)   ### SEE EXPLANATION BEFORE
+    grad_x=np.gradient(data2d, dx, axis=1)
     """
     plt.figure()
     plt.imshow(grad_x,cmap='seismic',vmin=-100,vmax=100)
@@ -464,6 +473,22 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
         lon_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.longitude.values
         lat_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.latitude.values
         
+        # determine the resolution in degrees, then convert to meters with haversine
+        # in order to give correct dx and dy to functions that calculates
+        # the orographic parameters with gradients
+        
+        dlon_inside_gridbox=abs(lon_inside_gridbox[1]-lon_inside_gridbox[0]) 
+        dlat_inside_gridbox=abs(lat_inside_gridbox[1]-lat_inside_gridbox[0])
+        
+        central_lon_inside_gridbox=np.median(lon_inside_gridbox)
+        central_lat_inside_gridbox=np.median(lat_inside_gridbox)
+        
+        point2_lon=central_lon_inside_gridbox+dlon_inside_gridbox
+        point2_lat=central_lat_inside_gridbox+dlat_inside_gridbox
+        
+        dem_dlat_meters=haversine((central_lat_inside_gridbox,central_lon_inside_gridbox),(point2_lat,central_lon_inside_gridbox),unit='m')
+        dem_dlon_meters=haversine((central_lat_inside_gridbox,central_lon_inside_gridbox),(central_lat_inside_gridbox,point2_lon),unit='m')
+        
         """    
         # plot for debug
         subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
@@ -479,15 +504,21 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
         ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp=calculate_F1_F2_F3_hamp(
                                             lon_inside_gridbox,
                                             lat_inside_gridbox,
-                                            subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
+                                            subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data,
+                                            dem_dlon_meters,
+                                            dem_dlat_meters
                                             )
         
         ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope=calculate_stddev_anis_orient_slope(
-                                                                    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data
+                                                                    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.data,
+                                                                    dem_dlon_meters,
+                                                                    dem_dlat_meters
                                                                     )
         
         tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope=calculate_stddev_anis_orient_slope(
-                                                                    subgrid_elev_inside_gridbox_5kmfilt_highpass_da.data
+                                                                    subgrid_elev_inside_gridbox_5kmfilt_highpass_da.data,
+                                                                    dem_dlon_meters,
+                                                                    dem_dlat_meters
                                                                     )
         
         
