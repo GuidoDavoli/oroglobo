@@ -359,3 +359,32 @@ def apply_local_minmax_constraint(data2D_filtered,data2D_original,N):
     
     return np.minimum( np.maximum( data2D_filtered,Hlmin ) , Hlmax )
 
+
+def add_frame_before_filtering(data2D, D, how=['symmetric','symmetric']):
+    
+    # add a frame, with thickness D pixels, around data2D.
+    # how to fill the frame along the 2 axis is decided with the "how" parameter
+    # possible options for "how":
+    #   - symmetric: the frame contains the same pixels as data2D, symmetrically wrt data2D border
+    #   - wrap: the frame contains pixel from data2D taken from the opposite side of data2D
+    # the 2 "how" options can be different for the 2 axis.
+    
+    # add pad along first axis
+    
+    temp = np.pad(data2D,((D,D),(0,0)),mode=how[0])
+    
+    # add pad along second axis
+    
+    data2D_with_frame = np.pad(temp,((0,0),(D,D)),mode=how[1])
+    
+    return data2D_with_frame
+
+
+def remove_frame_after_filtering(data2D, D):
+    
+    # return an array without an external frame of thickness D
+    
+    ax0len=data2D.shape[0]
+    ax1len=data2D.shape[1]
+    
+    return data2D[D:ax0len-D,D:ax1len-D]
