@@ -1,2 +1,3 @@
-# oroglobo
-a software for the generation of orographic ancillary files for NWP/climate models
+# OROGLOBO
+
+OROGraphic ancillary files generator for GLOBal atmospheric mOdels
