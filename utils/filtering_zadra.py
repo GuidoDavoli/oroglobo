@@ -17,6 +17,7 @@ WHEN POSSIBLE, THE EXECUTION OF SINGLE FUNCTIONS IS OPTIMIZED USING NUMBA
 import numpy as np
 from numba import jit
 import scipy.ndimage as ndimage
+import sys
 
 
 @jit(nopython=True, parallel=True) # Set "nopython" mode for best performance, equivalent to @njit
@@ -79,67 +80,7 @@ def LowPassFilter_Sp(rc,p):
     return Sp
 
 
-def LowPassFilter_1D(data_1D,rc,p):
-    
-    # this is the 1D filter of eq. 28
-    # with the normalized coefficients "c hat" (eq. 31)
-    # m and n are not taken as input because they represent the positions of the "image pixels";
-    # the filter automatically scan all the 1d array and returns the filtered array.
-    # rc, p must be integers ---> they are forced to int
-    #
-    #
-    # rc: is the cut-off scale parameter, which indicates the threshold wavelength 
-    #     (as a number of "data_1D" pixels) beyond which the amplitude of the signal should be reduced 
-    #     see figure 1 in the paper.
-    #
-    # p : is the truncation parameter, which basically controls the sharpness 
-    #     of the filter: the larger the value of p, the sharper the filter 
-    #     see figure 2 in the paper.
-    #
-    #     IMPORTANT:
-    #     practically, p is the half-length of the averaging window:
-    #     the value of the "central" pixel will be combined with those of (p − 1)
-    #     “neighbors to the right” and (p − 1) “neighbors to the left”
-    #
-    #     THEREFORE,
-    #     this function DO NOT FILTERS ALL PIXELS IN THE ARRAY; it excludes
-    #     the firsts and lasts (p-1) pixels.
-    #     The function returns an array with the shape of data_1D, with the
-    #     "internal" pixel effectively filtered and the external pixels 
-    #     (not filtered) ALL SET TO ZERO.
-    
-    rc=int(rc)
-    p=int(p)
-    
-    datalen=len(data_1D)
-    data1D_filtered=np.zeros(datalen)
-    
-    filter_window_half_len=p-1
-    nofilt_left_border=filter_window_half_len
-    nofilt_right_border=datalen-filter_window_half_len
-    
-    pixelcounter=1
-    
-    for n in range(datalen):
-        
-        print("n",n)
-        
-        if pixelcounter>nofilt_left_border and pixelcounter<nofilt_right_border: # inside the filtering region
-        
-            summation=0
-            
-            for  m in range(1,p): # range(1,p) gives numbers from 1 to p-1
-            
-                summation+=LowPassFilter_coeffs(m, rc, p)/LowPassFilter_Sp(rc, p) * (data_1D[n+m] + data_1D[n-m])
-        
-            data1D_filtered[n]=LowPassFilter_c1(rc)*data_1D[n] + summation
-        
-        pixelcounter+=1
-    
-    return data1D_filtered
-
-
-def LowPassFilter_axis0(data_2D,rc,p):
+def LowPassFilter_axis0_UPDATE(data_2D,rc,p):
     
     #### AGGIORNA DOC
     # this is the 1D filter of eq. 28
@@ -155,7 +96,8 @@ def LowPassFilter_axis0(data_2D,rc,p):
     #
     # p : is the truncation parameter, which basically controls the sharpness 
     #     of the filter: the larger the value of p, the sharper the filter 
-    #     see figure 2 in the paper.
+    #     see figure 2 in the paper. IN THIS VERSION IS AN ARRAY OF LENGTH EQUAL
+    #     TO DATA2D_AXIS0; EACH VALUE IS THE VALUE OF THE TRUNC PARAM AT EACH "ROW" OF THE ARRAY
     #
     #     IMPORTANT:
     #     practically, p is the half-length of the averaging window:
@@ -169,16 +111,20 @@ def LowPassFilter_axis0(data_2D,rc,p):
     #     "internal" pixel effectively filtered and the external pixels 
     #     (not filtered) ALL SET TO ZERO.
     
-    rc=int(rc)
-    p=int(p)
+    rc=rc.astype('int')
+    p=p.astype('int')
     
     datalen0=data_2D.shape[0]
     
-    data2D_filtered0=np.zeros(data_2D.shape)
+    if len(p)!=datalen0:
+        print("ERROR: len(p)!=datalen0",len(p),datalen0)
+        sys.exit()
+        
+    if len(rc)!=datalen0:
+        print("ERROR: len(rc)!=datalen0",len(rc),datalen0)
+        sys.exit()
     
-    filter_window_half_len=p-1
-    nofilt_left_border=filter_window_half_len
-    nofilt_right_border=datalen0-filter_window_half_len
+    data2D_filtered0=np.zeros(data_2D.shape)
     
     pixelcounter=1    
     
@@ -186,22 +132,28 @@ def LowPassFilter_axis0(data_2D,rc,p):
         
         print("n",n)
         
-        if pixelcounter>nofilt_left_border and pixelcounter<nofilt_right_border: # inside the filtering region
-        
-            summation=0
+        if rc[n]>0: # if filtering (not in the padding region where rc=0)
             
-            for  m in range(1,p): # range(1,p) gives numbers from 1 to p-1
+            filter_window_half_len=p[n]-1
+            nofilt_left_border=filter_window_half_len
+            nofilt_right_border=datalen0-filter_window_half_len
+                    
+            if pixelcounter>nofilt_left_border and pixelcounter<nofilt_right_border: # inside the filtering region
             
-                summation+=LowPassFilter_coeffs(m, rc, p)/LowPassFilter_Sp(rc, p) * (data_2D[n+m,:] + data_2D[n-m,:])
-            
-            data2D_filtered0[n,:]=LowPassFilter_c1(rc)*data_2D[n,:] + summation
+                summation=0
+                
+                for  m in range(1,p[n]): # range(1,p) gives numbers from 1 to p-1
+                
+                    summation+=LowPassFilter_coeffs(m, rc[n], p[n])/LowPassFilter_Sp(rc[n], p[n]) * (data_2D[n+m,:] + data_2D[n-m,:])
+                
+                data2D_filtered0[n,:]=LowPassFilter_c1(rc[n])*data_2D[n,:] + summation
             
         pixelcounter+=1
     
     return data2D_filtered0
 
 
-def LowPassFilter_axis1(data_2D,rc,p):
+def LowPassFilter_axis1_UPDATE(data_2D,rc,p):
     
     #### AGGIORNA DOC
     # this is the 1D filter of eq. 28
@@ -217,7 +169,8 @@ def LowPassFilter_axis1(data_2D,rc,p):
     #
     # p : is the truncation parameter, which basically controls the sharpness 
     #     of the filter: the larger the value of p, the sharper the filter 
-    #     see figure 2 in the paper.
+    #     see figure 2 in the paper. IN THIS VERSION IS AN ARRAY OF LENGTH EQUAL
+    #     TO DATA2D_AXIS1; EACH VALUE IS THE VALUE OF THE TRUNC PARAM AT EACH "COLUMN" OF THE ARRAY
     #
     #     IMPORTANT:
     #     practically, p is the half-length of the averaging window:
@@ -231,16 +184,20 @@ def LowPassFilter_axis1(data_2D,rc,p):
     #     "internal" pixel effectively filtered and the external pixels 
     #     (not filtered) ALL SET TO ZERO.
     
-    rc=int(rc)
-    p=int(p)
+    rc=rc.astype('int')
+    p=p.astype('int')
     
     datalen1=data_2D.shape[1]
     
-    data2D_filtered1=np.zeros(data_2D.shape)
+    if len(p)!=datalen1:
+        print("ERROR: len(p)!=datalen1",len(p),datalen1)
+        exit()
+        
+    if len(rc)!=datalen1:
+        print("ERROR: len(rc)!=datalen1",len(rc),datalen1)
+        exit()
     
-    filter_window_half_len=p-1
-    nofilt_left_border=filter_window_half_len
-    nofilt_right_border=datalen1-filter_window_half_len
+    data2D_filtered1=np.zeros(data_2D.shape)
     
     pixelcounter=1    
     
@@ -248,82 +205,49 @@ def LowPassFilter_axis1(data_2D,rc,p):
         
         print("n",n)
         
-        if pixelcounter>nofilt_left_border and pixelcounter<nofilt_right_border: # inside the filtering region
+        if rc[n]>0: # if filtering (not in the padding region where rc=0)
         
-            summation=0
+            filter_window_half_len=p[n]-1
+            nofilt_left_border=filter_window_half_len
+            nofilt_right_border=datalen1-filter_window_half_len
             
-            for  m in range(1,p): # range(1,p) gives numbers from 1 to p-1
+            if pixelcounter>nofilt_left_border and pixelcounter<nofilt_right_border: # inside the filtering region
             
-                summation+=LowPassFilter_coeffs(m, rc, p)/LowPassFilter_Sp(rc, p) * (data_2D[:,n+m] + data_2D[:,n-m])
-            
-            data2D_filtered1[:,n]=LowPassFilter_c1(rc)*data_2D[:,n] + summation
-            
+                summation=0
+                
+                for  m in range(1,p[n]): # range(1,p) gives numbers from 1 to p-1
+                
+                    summation+=LowPassFilter_coeffs(m, rc[n], p[n])/LowPassFilter_Sp(rc[n], p[n]) * (data_2D[:,n+m] + data_2D[:,n-m])
+                
+                data2D_filtered1[:,n]=LowPassFilter_c1(rc[n])*data_2D[:,n] + summation
+                
         pixelcounter+=1
     
     return data2D_filtered1
 
 
 
-def LowPassFilter_2D(data_2D,rc,p):
+def LowPassFilter_2D_v2_UPDATE(data2D,rc0,rc1,p0,p1):
     
-    rc=int(rc)
-    p=int(p)
+    # p0 and p1 are array of p values, they must have dimensions:
+    # p0 equal to data2D.shape[0]
+    # p1 equal to data2D.shape[1]
     
-    datalen0=data_2D.shape[0]
-    datalen1=data_2D.shape[1]
+    # rc0 and rc1 are array of rc values, they must have dimensions:
+    # rc0 equal to data2D.shape[0]
+    # rc1 equal to data2D.shape[1]
     
-    data2D_filtered0=np.zeros(data_2D.shape)
-    data2D_filtered=np.zeros(data_2D.shape)
+    rc0=rc0.astype('int')
+    rc1=rc1.astype('int')
+    p0=p0.astype('int')
+    p1=p1.astype('int')
     
-    for i0 in range(datalen0):
-        
-        print("i0", i0) 
-        data2D_filtered0[i0,:]=LowPassFilter_1D(data_2D[i0,:], rc, p)
-        
-    for i1 in range(datalen1):
-        
-        print("i1", i1)
-        data2D_filtered[:,i1]=LowPassFilter_1D(data2D_filtered0[:,i1], rc, p)
-            
+    #data2D_filtered0=np.zeros(data2D.shape)
+    #data2D_filtered=np.zeros(data2D.shape)
     
-    filter_window_half_len=p-1
-    nofilt_border1_axis0=filter_window_half_len
-    nofilt_border2_axis0=datalen0-filter_window_half_len
-    nofilt_border1_axis1=filter_window_half_len
-    nofilt_border2_axis1=datalen1-filter_window_half_len
-    
-    data2D_filtered[:nofilt_border1_axis0,:]=0
-    data2D_filtered[nofilt_border2_axis0:,:]=0
-    data2D_filtered[:,:nofilt_border1_axis1]=0
-    data2D_filtered[:,nofilt_border2_axis1:]=0
-    
-    return data2D_filtered
 
-
-def LowPassFilter_2D_v2(data_2D,rc,p):
-    
-    rc=int(rc)
-    p=int(p)
-    
-    datalen0=data_2D.shape[0]
-    datalen1=data_2D.shape[1]
-    
-    data2D_filtered0=np.zeros(data_2D.shape)
-    data2D_filtered=np.zeros(data_2D.shape)
-    
-    data2D_filtered0=LowPassFilter_axis0(data_2D, rc, p)
-    data2D_filtered =LowPassFilter_axis1(data2D_filtered0, rc, p)
-    
-    filter_window_half_len=p-1
-    nofilt_border1_axis0=filter_window_half_len
-    nofilt_border2_axis0=datalen0-filter_window_half_len
-    nofilt_border1_axis1=filter_window_half_len
-    nofilt_border2_axis1=datalen1-filter_window_half_len
-    
-    data2D_filtered[:nofilt_border1_axis0,:]=0
-    data2D_filtered[nofilt_border2_axis0:,:]=0
-    data2D_filtered[:,:nofilt_border1_axis1]=0
-    data2D_filtered[:,nofilt_border2_axis1:]=0
+    data2D_filtered0=LowPassFilter_axis0_UPDATE(data2D, rc0, p0)
+    data2D_filtered =LowPassFilter_axis1_UPDATE(data2D_filtered0, rc1, p1)
     
     return data2D_filtered
 
