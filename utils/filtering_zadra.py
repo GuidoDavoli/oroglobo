@@ -244,8 +244,6 @@ def LowPassFilter_2D_v2_UPDATE(data2D,rc0,rc1,p0,p1):
     
     #data2D_filtered0=np.zeros(data2D.shape)
     #data2D_filtered=np.zeros(data2D.shape)
-    
-    print(data2D.shape,rc0.shape,p0.shape)    
 
     data2D_filtered0=LowPassFilter_axis0_UPDATE(data2D, rc0, p0)
     data2D_filtered =LowPassFilter_axis1_UPDATE(data2D_filtered0, rc1, p1)

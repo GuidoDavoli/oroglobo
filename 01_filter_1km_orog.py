@@ -40,7 +40,6 @@ img_1km_global_smooth_out=oropar.files_out["img_1km_global_orog_smooth"]
 netcdf_1km_smooth_orog_out=oropar.files_work["netcdf_1km_smooth_orog"].replace("*GRIDNAME*", gridname) 
 
 
-
 # Open a file
 data_orog = xr.open_dataset(path_data_in+netcdf_orog_in)
 lat = data_orog.latitude.values
@@ -108,10 +107,10 @@ p_zonal_pixel_pad      =np.pad(p_zonal_pixel,      (padp,padp)) # pad with zeros
 data_orog_elev_withframe=orofilt_z.add_frame_before_filtering(data_orog.elev, padp, ['symmetric','wrap']) # the input orog is supposed to be in lat, lon order
 
 data_orog_elev_filtered_withframe=orofilt_z.LowPassFilter_2D_v2_UPDATE(data_orog_elev_withframe, 
-                                                                       rc_meridional_pixel_pad, 
                                                                        rc_zonal_pixel_pad, 
-                                                                       p_meridional_pixel_pad, 
-                                                                       p_zonal_pixel_pad)
+                                                                       rc_meridional_pixel_pad, 
+                                                                       p_zonal_pixel_pad, 
+                                                                       p_meridional_pixel_pad)
 
 data_orog_elev_filtered=orofilt_z.remove_frame_after_filtering(data_orog_elev_filtered_withframe, padp)
 
