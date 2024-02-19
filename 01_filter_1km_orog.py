@@ -118,18 +118,17 @@ data_orog_elev_filtered=orofilt_z.remove_frame_after_filtering(data_orog_elev_fi
 ### APPLY LOCAL MINMAX CONSTRAINT
 ### TUNING PARAMETER to define the dimension of the "local" neighborhood
 L=int(min(rc_meridional_pixel.min(),rc_zonal_pixel.min())/5) 
-data_orog_elev_filtered=orofilt_z.apply_local_minmax_constraint(data_orog_elev_filtered,dem_array,L)
+orogsmooth=orofilt_z.apply_local_minmax_constraint(data_orog_elev_filtered,data_orog.elev,L)
 
 
 
 
-
-
-
+"""
 filt=orofunc.filter_ECMWF(1, 80)
 
 orogsmooth = signal.convolve2d(data_orog.elev, filt, mode='same', boundary='symm').astype(np.float32) # IF BUNDARY IS SET TO WRAP, SPURIOUS OROGRAPHY AT THE POLES (np IS WRAPPED WIT sp AND VICE VERSA)
 # ANOTHER SOLUTION WOULD BE TO USE "WRAP" TO GET CORRECT WRAPPING ALONG LONGITUDES, ADN CORRECT AT NP and SP: 0 at NP points, a simple average at SP points
+"""
 
 # plot
 oroplot.orography_plot(orogsmooth,path_img_out+img_1km_global_smooth_out,2400)
