@@ -48,7 +48,7 @@ lon = data_orog.longitude.values
 
 # plot
 oroplot.orography_plot(data_orog.elev,path_img_out+img_1km_global_raw_out,2400)
-
+print("oroginal plot: done!)"
 
 ############ FILTERING with Zadra 2018 method
 
@@ -87,6 +87,7 @@ for i in range(len(lat)):
     else:
         rc_zonal_pixel[i]=filtering_scale_pixel_zonal
 
+print('rc calculation: done!')
 
 #### P parameter defined as a multiple of rc
 
@@ -106,19 +107,26 @@ p_zonal_pixel_pad      =np.pad(p_zonal_pixel,      (padp,padp)) # pad with zeros
 
 data_orog_elev_withframe=orofilt_z.add_frame_before_filtering(data_orog.elev, padp, ['symmetric','wrap']) # the input orog is supposed to be in lat, lon order
 
+print('padding: done!')
+
 data_orog_elev_filtered_withframe=orofilt_z.LowPassFilter_2D_v2_UPDATE(data_orog_elev_withframe, 
                                                                        rc_zonal_pixel_pad, 
                                                                        rc_meridional_pixel_pad, 
                                                                        p_zonal_pixel_pad, 
                                                                        p_meridional_pixel_pad)
 
+print('filtering: done!')
+
 data_orog_elev_filtered=orofilt_z.remove_frame_after_filtering(data_orog_elev_filtered_withframe, padp)
+
+print('removing frame: done!')
 
 ### APPLY LOCAL MINMAX CONSTRAINT
 ### TUNING PARAMETER to define the dimension of the "local" neighborhood
 L=int(min(rc_meridional_pixel.min(),rc_zonal_pixel.min())/5) 
-orogsmooth=orofilt_z.apply_local_minmax_constraint(data_orog_elev_filtered,data_orog.elev,L)
+orogsmooth=orofilt_z.apply_local_minmax_constraint(data_orog_elev_filtered,data_orog.elev,L,['symmetric','wrap'])
 
+print('local minmax constraint: done!')
 
 
 
@@ -132,12 +140,16 @@ orogsmooth = signal.convolve2d(data_orog.elev, filt, mode='same', boundary='symm
 # plot
 oroplot.orography_plot(orogsmooth,path_img_out+img_1km_global_smooth_out,2400)
 
+print('smooth plot: done!')
+
+
 #orogsmooth_da=xr.DataArray(orogsmooth.transpose, coords=data_orog.coords, dims=data_orog.dims, attrs=data_orog.attrs)
 orogsmooth_da=xr.DataArray(orogsmooth, coords=[('latitude', lat),('longitude', lon)])
 
 # save as netcdf
 orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out)
 
+print('save to netcdf: done!')
 
 # su tintin gira in 4 ore
 

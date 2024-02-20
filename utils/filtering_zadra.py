@@ -20,7 +20,7 @@ import scipy.ndimage as ndimage
 import sys
 
 
-@jit(nopython=True, parallel=True) # Set "nopython" mode for best performance, equivalent to @njit
+@jit(nopython=True) # Set "nopython" mode for best performance, equivalent to @njit
 def LowPassFilter_c1(rc):
     
     rc=int(rc)
@@ -30,7 +30,7 @@ def LowPassFilter_c1(rc):
     return c1
 
 
-@jit(nopython=True, parallel=True) # Set "nopython" mode for best performance, equivalent to @njit
+@jit(nopython=True) # Set "nopython" mode for best performance, equivalent to @njit
 def LowPassFilter_coeffs(m,rc,p):
     
     # this function returns c(m) as defined in eq 30. in the paper the name of the coefficient is "m+1" but is just a name, c is a function of m
@@ -59,7 +59,7 @@ def LowPassFilter_coeffs(m,rc,p):
     return c
         
 
-@jit(nopython=True, parallel=True) # Set "nopython" mode for best performance, equivalent to @njit
+@jit(nopython=True) # Set "nopython" mode for best performance, equivalent to @njit
 def LowPassFilter_Sp(rc,p):
     
     # this function returns Sp as defined in eq 32.
@@ -115,6 +115,7 @@ def LowPassFilter_axis0_UPDATE(data_2D,rc,p):
     p=p.astype('int')
     
     datalen0=data_2D.shape[0]
+    datalen1=data_2D.shape[1]
     
     if len(p)!=datalen0:
         print("ERROR: len(p)!=datalen0",len(p),datalen0)
@@ -140,7 +141,7 @@ def LowPassFilter_axis0_UPDATE(data_2D,rc,p):
                     
             if pixelcounter>nofilt_left_border and pixelcounter<nofilt_right_border: # inside the filtering region
             
-                summation=0
+                summation=np.zeros(datalen1)
                 
                 for  m in range(1,p[n]): # range(1,p) gives numbers from 1 to p-1
                 
@@ -187,15 +188,16 @@ def LowPassFilter_axis1_UPDATE(data_2D,rc,p):
     rc=rc.astype('int')
     p=p.astype('int')
     
+    datalen0=data_2D.shape[0]
     datalen1=data_2D.shape[1]
     
     if len(p)!=datalen1:
         print("ERROR: len(p)!=datalen1",len(p),datalen1)
-        exit()
+        sys.exit()
         
     if len(rc)!=datalen1:
         print("ERROR: len(rc)!=datalen1",len(rc),datalen1)
-        exit()
+        sys.exit()
     
     data2D_filtered1=np.zeros(data_2D.shape)
     
@@ -213,7 +215,7 @@ def LowPassFilter_axis1_UPDATE(data_2D,rc,p):
             
             if pixelcounter>nofilt_left_border and pixelcounter<nofilt_right_border: # inside the filtering region
             
-                summation=0
+                summation=np.zeros(datalen0)
                 
                 for  m in range(1,p[n]): # range(1,p) gives numbers from 1 to p-1
                 
@@ -251,34 +253,39 @@ def LowPassFilter_2D_v2_UPDATE(data2D,rc0,rc1,p0,p1):
     return data2D_filtered
 
 
-def localminimum_2D(data2D,N):
+def localminimum_2D(data2D,N,how):
     
     # RETURN A MAP OF THE MINIMUM VALUE AMONG
     # THE NxN NEIGHBOURING POINTS (SEE ZADRA 2018, SECTION 5.2)
     #
-    # CAUTION: NEED TO BETTER DEFINE TREATMENT OF BORDERS
     
-    return ndimage.minimum_filter(data2D,N)
+    return ndimage.minimum_filter(data2D,N,mode=how)
 
 
-def localmaximum_2D(data2D,N):
+def localmaximum_2D(data2D,N,how):
     
     # RETURN A MAP OF THE MAXIMUM VALUE AMONG
     # THE NxN NEIGHBOURING POINTS (SEE ZADRA 2018, SECTION 5.2)
     #
-    # CAUTION: NEED TO BETTER DEFINE TREATMENT OF BORDERS
     
-    return ndimage.maximum_filter(data2D,N)
+    return ndimage.maximum_filter(data2D,N,mode=how)
 
 
-def apply_local_minmax_constraint(data2D_filtered,data2D_original,N):
+def apply_local_minmax_constraint(data2D_filtered,data2D_original,N,how):
     
     # APPLIES THE LOCAL MINIMUM/MAXIMUM CONSTRAINT AS DESCRIBED IN
     # ZADRA, 2018, SECTION 5.2. THE SIZE OF THE SQUARE DEFINING NEIGHBORING
     # POINTS IS PASSED BY THE USER (N)
+    # how specifies what to do with borders along the two axis
     
-    Hlmin=localminimum_2D(data2D_original,N)
-    Hlmax=localmaximum_2D(data2D_original,N)
+    if how[0]=='symmetric':
+        how[0]='mirror'
+        
+    if how[1]=='symmetric':
+        how[1]='mirror'
+    
+    Hlmin=localminimum_2D(data2D_original,N,how)
+    Hlmax=localmaximum_2D(data2D_original,N,how)
     
     return np.minimum( np.maximum( data2D_filtered,Hlmin ) , Hlmax )
 
