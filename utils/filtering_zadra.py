@@ -131,7 +131,7 @@ def LowPassFilter_axis0_UPDATE(data_2D,rc,p):
     
     for n in range(datalen0):
         
-        #print("n",n)
+        print("n",n)
         
         if rc[n]>0: # if filtering (not in the padding region where rc=0)
             
@@ -205,7 +205,7 @@ def LowPassFilter_axis1_UPDATE(data_2D,rc,p):
     
     for n in range(datalen1):
         
-        #print("n",n)
+        print("n",n)
         
         if rc[n]>0: # if filtering (not in the padding region where rc=0)
         
