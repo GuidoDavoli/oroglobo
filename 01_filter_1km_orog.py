@@ -48,7 +48,7 @@ lon = data_orog.longitude.values
 
 # plot
 oroplot.orography_plot(data_orog.elev,path_img_out+img_1km_global_raw_out,2400)
-print("oroginal plot: done!)"
+print("oroginal plot: done!")
 
 ############ FILTERING with Zadra 2018 method
 
