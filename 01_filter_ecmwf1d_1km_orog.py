@@ -133,8 +133,8 @@ del orogsmooth0 # not needed anymore, free some memory
 
 CN_minmax=3  ##     TUNING PARAMETER
 
-N_minmax_zonal_pixel=D_zonal_pixel/CN_minmax
-N_minmax_meridional_pixel=D_meridional_pixel/CN_minmax
+N_minmax_zonal_pixel=(D_zonal_pixel/CN_minmax).astype(int)
+N_minmax_meridional_pixel=(D_meridional_pixel/CN_minmax).astype(int)
 
 orogsmooth=orofilt_common.apply_local_minmax_constraint_2D_variableN(orogsmooth, data_orog.elev, N_minmax_zonal_pixel, N_minmax_meridional_pixel, ['wrap','symmetric'])
 
