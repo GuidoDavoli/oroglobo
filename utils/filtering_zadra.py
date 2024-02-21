@@ -16,7 +16,6 @@ WHEN POSSIBLE, THE EXECUTION OF SINGLE FUNCTIONS IS OPTIMIZED USING NUMBA
 
 import numpy as np
 from numba import jit
-import scipy.ndimage as ndimage
 import sys
 
 
@@ -80,7 +79,7 @@ def LowPassFilter_Sp(rc,p):
     return Sp
 
 
-def LowPassFilter_axis0_UPDATE(data_2D,rc,p):
+def LowPassFilter_axis0(data_2D,rc,p):
     
     #### AGGIORNA DOC
     # this is the 1D filter of eq. 28
@@ -154,7 +153,7 @@ def LowPassFilter_axis0_UPDATE(data_2D,rc,p):
     return data2D_filtered0
 
 
-def LowPassFilter_axis1_UPDATE(data_2D,rc,p):
+def LowPassFilter_axis1(data_2D,rc,p):
     
     #### AGGIORNA DOC
     # this is the 1D filter of eq. 28
@@ -229,7 +228,7 @@ def LowPassFilter_axis1_UPDATE(data_2D,rc,p):
 
 
 
-def LowPassFilter_2D_v2_UPDATE(data2D,rc0,rc1,p0,p1):
+def LowPassFilter_2D(data2D,rc0,rc1,p0,p1):
     
     # p0 and p1 are array of p values, they must have dimensions:
     # p0 equal to data2D.shape[0]
@@ -247,74 +246,7 @@ def LowPassFilter_2D_v2_UPDATE(data2D,rc0,rc1,p0,p1):
     #data2D_filtered0=np.zeros(data2D.shape)
     #data2D_filtered=np.zeros(data2D.shape)
 
-    data2D_filtered0=LowPassFilter_axis0_UPDATE(data2D, rc0, p0)
-    data2D_filtered =LowPassFilter_axis1_UPDATE(data2D_filtered0, rc1, p1)
+    data2D_filtered0=LowPassFilter_axis0(data2D, rc0, p0)
+    data2D_filtered =LowPassFilter_axis1(data2D_filtered0, rc1, p1)
     
     return data2D_filtered
-
-
-def localminimum_2D(data2D,N,how):
-    
-    # RETURN A MAP OF THE MINIMUM VALUE AMONG
-    # THE NxN NEIGHBOURING POINTS (SEE ZADRA 2018, SECTION 5.2)
-    #
-    
-    return ndimage.minimum_filter(data2D,N,mode=how)
-
-
-def localmaximum_2D(data2D,N,how):
-    
-    # RETURN A MAP OF THE MAXIMUM VALUE AMONG
-    # THE NxN NEIGHBOURING POINTS (SEE ZADRA 2018, SECTION 5.2)
-    #
-    
-    return ndimage.maximum_filter(data2D,N,mode=how)
-
-
-def apply_local_minmax_constraint(data2D_filtered,data2D_original,N,how):
-    
-    # APPLIES THE LOCAL MINIMUM/MAXIMUM CONSTRAINT AS DESCRIBED IN
-    # ZADRA, 2018, SECTION 5.2. THE SIZE OF THE SQUARE DEFINING NEIGHBORING
-    # POINTS IS PASSED BY THE USER (N)
-    # how specifies what to do with borders along the two axis
-    
-    if how[0]=='symmetric':
-        how[0]='mirror'
-        
-    if how[1]=='symmetric':
-        how[1]='mirror'
-    
-    Hlmin=localminimum_2D(data2D_original,N,how)
-    Hlmax=localmaximum_2D(data2D_original,N,how)
-    
-    return np.minimum( np.maximum( data2D_filtered,Hlmin ) , Hlmax )
-
-
-def add_frame_before_filtering(data2D, D, how=['symmetric','symmetric']):
-    
-    # add a frame, with thickness D pixels, around data2D.
-    # how to fill the frame along the 2 axis is decided with the "how" parameter
-    # possible options for "how":
-    #   - symmetric: the frame contains the same pixels as data2D, symmetrically wrt data2D border
-    #   - wrap: the frame contains pixel from data2D taken from the opposite side of data2D
-    # the 2 "how" options can be different for the 2 axis.
-    
-    # add pad along first axis
-    
-    temp = np.pad(data2D,((D,D),(0,0)),mode=how[0])
-    
-    # add pad along second axis
-    
-    data2D_with_frame = np.pad(temp,((0,0),(D,D)),mode=how[1])
-    
-    return data2D_with_frame
-
-
-def remove_frame_after_filtering(data2D, D):
-    
-    # return an array without an external frame of thickness D
-    
-    ax0len=data2D.shape[0]
-    ax1len=data2D.shape[1]
-    
-    return data2D[D:ax0len-D,D:ax1len-D]

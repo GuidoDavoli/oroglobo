@@ -16,6 +16,7 @@ import numpy as np
 import xarray as xr
 import oroglobo_parameters as oropar
 import oroglobo_functions as orofunc
+import utils.filtering_ecmwf as orofilt_ecmwf
 import oroglobo_plotting as oroplot
 from scipy import signal
 
@@ -41,7 +42,7 @@ lon_model = data_model_grid_orog.longitude.values
 
 ############ FILTERING 
 
-filt=orofunc.filter_ECMWF(1, 6)
+filt=orofilt_ecmwf.filter_ECMWF_2D(1, 6)
 
 operational_orog_on_model_grid = signal.convolve2d(data_model_grid_orog.elev, filt, mode='same', boundary='symm').astype(np.float32) # IF BUNDARY IS SET TO WRAP, SPURIOUS OROGRAPHY AT THE POLES (np IS WRAPPED WIT sp AND VICE VERSA)
 # ANOTHER SOLUTION WOULD BE TO USE "WRAP" TO GET CORRECT WRAPPING ALONG LONGITUDES, ADN CORRECT AT NP and SP: 0 at NP points, a simple average at SP points
