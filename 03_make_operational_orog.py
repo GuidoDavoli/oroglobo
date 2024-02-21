@@ -19,6 +19,7 @@ import oroglobo_functions as orofunc
 import utils.filtering_ecmwf as orofilt_ecmwf
 import oroglobo_plotting as oroplot
 from scipy import signal
+from scipy import ndimage
 
 # IMPORT PARAMETERS
 gridname=oropar.model_grid["GRIDNAME"]
@@ -33,19 +34,43 @@ netcdf_model_mask_in=oropar.files_in["netcdf_model_mask"].replace("*GRIDNAME*", 
 netcdf_model_grid_operational_orog_out=oropar.files_out["netcdf_model_grid_operational_orog"].replace("*GRIDNAME*", gridname) 
 img_model_grid_operational_orog_out=oropar.files_out["img_model_grid_operational_orog"].replace("*GRIDNAME*", gridname) 
 
-
+d=int(oropar.filtering_Ndx_ecmwf["d"])
+Ndx=int(oropar.filtering_Ndx_ecmwf["Ndx"])
 
 # Open the file with the model mean orography 
 data_model_grid_orog = xr.open_dataset(path_data_in+netcdf_model_grid_orog_in)
 lat_model = data_model_grid_orog.latitude.values
 lon_model = data_model_grid_orog.longitude.values
+nlat=len(lat_model)
+nlon=len(lon_model)
 
 ############ FILTERING 
 
-filt=orofilt_ecmwf.filter_ECMWF_2D(1, 6)
 
-operational_orog_on_model_grid = signal.convolve2d(data_model_grid_orog.elev, filt, mode='same', boundary='symm').astype(np.float32) # IF BUNDARY IS SET TO WRAP, SPURIOUS OROGRAPHY AT THE POLES (np IS WRAPPED WIT sp AND VICE VERSA)
-# ANOTHER SOLUTION WOULD BE TO USE "WRAP" TO GET CORRECT WRAPPING ALONG LONGITUDES, ADN CORRECT AT NP and SP: 0 at NP points, a simple average at SP points
+#### FILTERING ALONG axis 0 (at each lon, filter along MERIDIONAL DIRECTION)
+
+orogsmooth0=np.zeros((nlat,nlon))
+
+for j in range(nlon):
+    
+    D=Ndx
+    F1=orofilt_ecmwf.filter_ECMWF_1D(d,D)
+    orogsmooth0[:,j]=ndimage.convolve1d(data_model_grid_orog.elev[:,j],F1,mode='mirror')  # the edges are the poles --> approximate with "mirror"
+
+print('meridional filtering: done!')
+
+#### FILTER THE PREVIOUS FIELD ALONG AXIS 1 (at each LAT, filter along ZONAL DIRECTION)
+
+operational_orog_on_model_grid=np.zeros((nlat,nlon))
+
+for i in range(nlat):
+    
+    D=Ndx
+    F1=orofilt_ecmwf.filter_ECMWF_1D(d,D)
+    operational_orog_on_model_grid[i,:]=ndimage.convolve1d(orogsmooth0[i,:],F1,mode='wrap')  # the edges are datelines or greenwich --> wrap around the globe
+    
+print('zonal filtering: done!')
+
 
 ############ MASKING
 

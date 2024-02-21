@@ -40,9 +40,9 @@ img_1km_global_raw_out=oropar.files_out["img_1km_global_orog"]
 img_1km_global_smooth_out=oropar.files_out["img_1km_global_orog_smooth"]
 netcdf_1km_smooth_orog_out=oropar.files_work["netcdf_1km_smooth_orog"].replace("*GRIDNAME*", gridname) 
 
-d=oropar.filtering_ecmwf["d"]
-Cfilt_max_zonal=oropar.filtering_ecmwf["Cfilt_max_zonal"]
-CN_minmax=oropar.filtering_ecmwf["CN_minmax"]
+d=int(oropar.filtering_1km_ecmwf["d"])
+Cfilt_max_zonal=int(oropar.filtering_1km_ecmwf["Cfilt_max_zonal"])
+CN_minmax=int(oropar.filtering_1km_ecmwf["CN_minmax"])
 
 #####################################################################
 
@@ -154,3 +154,6 @@ orogsmooth_da=xr.DataArray(orogsmooth, coords=[('latitude', lat),('longitude', l
 orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out)
 
 print('save to netcdf: done!')
+
+
+# run in approx. 15 min on tintin

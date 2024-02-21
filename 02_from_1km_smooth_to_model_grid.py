@@ -4,6 +4,11 @@
 Created on Mon Nov 20 12:50:31 2023
 
 @author: guidodavoli
+
+take the 1km reoslution orography smoothed to target model grid scale
+and aggregate to target model grid boxes (simple mean)
+
+
 """
 
 import numpy as np

@@ -59,17 +59,27 @@ model_grid = {
     "gridspacing_max_km":312
 }
 
-filtering_ecmwf = {
+filtering_1km_ecmwf = {
 	"d":1, # [km]
     "Cfilt_max_zonal":3,
-    "CN_minmax":3,
+    "CN_minmax":3
+}
+
+filtering_Ndx_ecmwf = {
+	"d":1, # [pixel]
+    "Ndx":2 # [pixel]
 }
 
 
 """
 USER MANUAL
 
-### filtering_ecmwf
+### filtering_1km_ecmwf
+
+    THIS SECTIONS CONTAINS THE PARAMETERS USED TO SMOOTH THE RAW 1KM OROGRAPHY
+    TO A 1KM RESOLUTION OROGRAPHY BUT WITH OROGRAPHIC SCALES BELOW MODEL TARGET
+    GRID BOX SPACING FILTERED OUT. THE FILTERING IS PERFORMED WITH THE ECMWF
+    FILTER.
     
     d: the lenght of the filter edge. [km]    
 
@@ -87,4 +97,15 @@ USER MANUAL
                of the whole filtering precedure (the final smoothed orog will
                resemble the original one) [dimensionless]
 
+### filtering_Ndx_ecmwf
+
+    THIS SECTIONS CONTAINS THE PARAMETERS USED TO ADDITIONALLY SMOOTH THE MODEL
+    MEAN OROGRAPHY. THIS CAN BE NECESSARY FOR EXAMPLE BECAUSE OF MODEL INSTABILITIES
+    WITH TOO STEEP OROGRAPHY, OR TO MATCH THE EFFECTIVE OROGRAPHIC RESOLUTION
+    OF THE MODEL (KANEHAMA ET AL)
+
+    d: the lenght of the filter edge. [pixels]    
+    
+    Ndx: filtering scale of the ecmwf filter; coincides with D. [pixels]
+    
 """
