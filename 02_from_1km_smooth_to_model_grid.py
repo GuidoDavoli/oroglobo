@@ -37,9 +37,6 @@ nlon_model=len(lon_model)
 # Open the file with 1km-resolution orography smoothed to model gridspacing
 data_orog_1km_smooth = xr.open_dataset(path_data_in+netcdf_1km_smooth_orog_in)
 
-### VERY CRUDE WAY TO SET ALL ZEROS ABOVE A CERTAIN LAT (NORTH POLE)
-### (TO PREVENT SPURIOUS OROGRAPHY OVER NORTH POLE)
-data_orog_1km_smooth = data_orog_1km_smooth.where(data_orog_1km_smooth.latitude<85,0)
 
 lat_1km = data_orog_1km_smooth.latitude.values
 lon_1km = data_orog_1km_smooth.longitude.values

@@ -59,6 +59,32 @@ model_grid = {
     "gridspacing_max_km":312
 }
 
+filtering_ecmwf = {
+	"d":1, # [km]
+    "Cfilt_max_zonal":3,
+    "CN_minmax":3,
+}
 
 
+"""
+USER MANUAL
 
+### filtering_ecmwf
+    
+    d: the lenght of the filter edge. [km]    
+
+    Cfilt_max_zonal: defines the maximum filterng scale in zonal direction; 
+                     the number of longitudinal points / Cfilt_max_zonal is 
+                     the maximum filterng scale in zonal direction. This is
+                     needed in order to avoid to use too many points near the
+                     poles. [dimensionless]
+                     
+    CN_minmax: defines the dimension of the neighbrhood considered by the 
+               local_minmax algorithm; 
+               the filter lenght scale D / CN_minmax is the dimension of the
+               local neighbrhood. The greater CN_minmax, the greater is the 
+               effect of the local_minmax algorithm and less is the effect
+               of the whole filtering precedure (the final smoothed orog will
+               resemble the original one) [dimensionless]
+
+"""

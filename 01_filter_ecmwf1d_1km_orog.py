@@ -40,6 +40,10 @@ img_1km_global_raw_out=oropar.files_out["img_1km_global_orog"]
 img_1km_global_smooth_out=oropar.files_out["img_1km_global_orog_smooth"]
 netcdf_1km_smooth_orog_out=oropar.files_work["netcdf_1km_smooth_orog"].replace("*GRIDNAME*", gridname) 
 
+d=oropar.filtering_ecmwf["d"]
+Cfilt_max_zonal=oropar.filtering_ecmwf["Cfilt_max_zonal"]
+CN_minmax=oropar.filtering_ecmwf["CN_minmax"]
+
 #####################################################################
 
 # Open raw 1km orography file
@@ -61,7 +65,7 @@ print("oroginal plot: done!")
 
 filt_scale_km=float(gridspacing_max_km) # maximum model target grid spacing, km
 
-d=1 # km. fixed.
+# d is read at the beginning of the script as an external parameter
 
 #### determine d and D, converting from km to pixels
 #### they are uniform along longitudes, but varies with latitude due to meridian convergence
@@ -90,8 +94,7 @@ for i in range(len(lat)):
     filtering_scale_pixel_zonal=int(filt_scale_km/km_in_each_pixel_zonal) # the filtering scale in the zonal direction, in pixels
     
     #### DEFINE A MAXIMUM FILTERNG SCALE IN ZONAL DIRECTION (OTHWERWISE AT POLES I WOULD HAVE UNFEASIBLE SCALES, TOO BIG) 
-    #### TUNING PARAMETER
-    Cfilt_max_zonal=3
+    #### Cfilt_max_zonal is an external TUNING PARAMETER
     if filtering_scale_pixel_zonal>int(len(lon)/Cfilt_max_zonal):
         D_zonal_pixel[i]=int(len(lon)/Cfilt_max_zonal)
     else:
@@ -131,7 +134,7 @@ del orogsmooth0 # not needed anymore, free some memory
 # define neighborhood lenghtscale for each lat/lon
 # DEFINED AS A FRACTION OF THE FILTERING SCALE D
 
-CN_minmax=3  ##     TUNING PARAMETER
+# CN_minmax is an external TUNING PARAMETER
 
 N_minmax_zonal_pixel=(D_zonal_pixel/CN_minmax).astype(int)
 N_minmax_meridional_pixel=(D_meridional_pixel/CN_minmax).astype(int)

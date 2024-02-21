@@ -12,6 +12,7 @@ COMMON ROUTINES FOR FILTERING IN OROGLOBO
 import scipy.ndimage as ndimage
 import numpy as np
 
+
 ######### routines for local minmax constraint, for 2d data, with constant ####
 ######### neighborhood scale (in pixels) around the globe #####################
 
