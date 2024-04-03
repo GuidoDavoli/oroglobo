@@ -337,14 +337,33 @@ for latindex in range(nlat_model):
                 #######################################################################################################
                 ### calculate the ogwd and tofd parameters from the selected data points inside the model grid cell ###
                 #######################################################################################################
-             
-                ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
-                ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
-                tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
-                =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
-                                                                     tif_filenames_list,
-                                                                     operational_mean_orog_in_model_grid_box
-                                                                     )
+                
+                all_tif_data_ds,data_exist=orofunc.get_copernicus90m_data_xrds_from_tiles_list(tif_filenames_list)
+                
+                if data_exist:
+                
+                    ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
+                    ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
+                    tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
+                    =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
+                                                                         all_tif_data_ds,
+                                                                         operational_mean_orog_in_model_grid_box
+                                                                         )
+                else:
+                    
+                    ogwd_F1 = np.nan # if there are no data on disk --> the grid box is entirely on ocean
+                    ogwd_F2 = np.nan
+                    ogwd_F3 = np.nan
+                    ogwd_hamp = np.nan
+                    ogwd_stddev = np.nan
+                    ogwd_anisotropy = np.nan
+                    ogwd_orientation = np.nan
+                    ogwd_slope = np.nan
+                    tofd_stddev = np.nan
+                    tofd_anisotropy = np.nan
+                    tofd_orientation = np.nan
+                    tofd_slope = np.nan
+                    
                 #print(f'Time: {time.time() - start} | 3')
                 # store the values of the parameters for the particular
                 # grid box in the corresponding 2darray

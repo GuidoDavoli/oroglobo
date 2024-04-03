@@ -110,10 +110,12 @@ meanorog_1km=np.zeros((nlat_1km,nlon_1km))
 ######## MAIN CALCULATIONS BEGIN ########
 #########################################
 
+previous_tif_filenames_list=[] # needed later to optimize access to files
 
 for latindex in range(nlat_1km):
     
     if lat_1km[latindex]>-90 and lat_1km[latindex]<90:
+    #if lat_1km[latindex]>0 and lat_1km[latindex]<10:
         
         #print("Latitude: ",lat_model[latindex])
         
@@ -263,22 +265,40 @@ for latindex in range(nlat_1km):
                 tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(km1_grid_box_polygon)
                 
                 
-                ###############################################################################################
-                ### calculate the 1km mean orography from the selected data points inside the 1km grid cell ###
-                ###############################################################################################
-             
-                
-                H=orofunc.calculate_mean_orog_in_grid_box(km1_grid_box_polygon,tif_filenames_list)
-                                                         
-                #print(f'Time: {time.time() - start} | 3')
-                # store the values of the parameters for the particular
-                # grid box in the corresponding 2darray
-                
-                meanorog_1km[latindex,lonindex] = H
-                print("mean orog: ",str(H))
-    
                 #print(f'Time: {time.time() - start} | 4')
+                
+                
+            ###############################################################################################
+            ### calculate the 1km mean orography from the selected data points inside the 1km grid cell ###
+            ###############################################################################################
+            
+            if tif_filenames_list!=previous_tif_filenames_list:
+                # tif files on disk are opened only if they are not already opened.
+                # if the above condition is false, the filenames list and
+                # data_exist were already opened and loaded in memory.
+                print(tif_filenames_list)
+                all_tif_data_ds,data_exist=orofunc.get_copernicus90m_data_xrds_from_tiles_list(tif_filenames_list)
+            if data_exist:
+                H=orofunc.calculate_mean_orog_in_grid_box(km1_grid_box_polygon,all_tif_data_ds)
+            else:
+                H=np.nan # if there are no data on disk --> the grid box is entirely on ocean
+                                                     
+            #print(f'Time: {time.time() - start} | 3')
+            # store the values of the parameters for the particular
+            # grid box in the corresponding 2darray
+            
+            meanorog_1km[latindex,lonindex] = H
+            print("mean orog: ",str(H))
+            
+            ##########################
+            ### end of calculation ###
+            ##########################
     
+            
+            # to register the data already loaded and optimize access to file
+            previous_tif_filenames_list=tif_filenames_list
+            
+            
 # at the end, when all 2d arrays of parameters are filled, save netcdf on disk
 
 ##### CHECK IF THERE IS THE NEED TO CHANGE -180...180 TO 0...360
@@ -321,40 +341,3 @@ print('save to netcdf: done!')
 
 
 
-
-
-### create data arrays
-# ogwd_F1_on_model_grid_da=xr.DataArray(ogwd_F1_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# ogwd_F2_on_model_grid_da=xr.DataArray(ogwd_F2_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# ogwd_F3_on_model_grid_da=xr.DataArray(ogwd_F3_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# ogwd_hamp_on_model_grid_da=xr.DataArray(ogwd_hamp_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-
-# ogwd_stddev_on_model_grid_da=xr.DataArray(ogwd_stddev_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# ogwd_anisotropy_on_model_grid_da=xr.DataArray(ogwd_anisotropy_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# ogwd_orientation_on_model_grid_da=xr.DataArray(ogwd_orientation_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# ogwd_slope_on_model_grid_da=xr.DataArray(ogwd_slope_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-
-# tofd_stddev_on_model_grid_da=xr.DataArray(tofd_stddev_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# tofd_anisotropy_on_model_grid_da=xr.DataArray(tofd_anisotropy_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# tofd_orientation_on_model_grid_da=xr.DataArray(tofd_orientation_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-# tofd_slope_on_model_grid_da=xr.DataArray(tofd_slope_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
-
-
-### create datasets
-# ogwd_parameters_ds=ogwd_F1_on_model_grid_da.to_dataset(name = 'ogwd_F1')
-# ogwd_parameters_ds['ogwd_F2']=ogwd_F2_on_model_grid_da
-# ogwd_parameters_ds['ogwd_F3']=ogwd_F3_on_model_grid_da
-# ogwd_parameters_ds['ogwd_hamp']=ogwd_hamp_on_model_grid_da
-# ogwd_parameters_ds['ogwd_stddev']=ogwd_stddev_on_model_grid_da
-# ogwd_parameters_ds['ogwd_anisotropy']=ogwd_anisotropy_on_model_grid_da
-# ogwd_parameters_ds['ogwd_orientation']=ogwd_orientation_on_model_grid_da
-# ogwd_parameters_ds['ogwd_slope']=ogwd_slope_on_model_grid_da
-
-# tofd_parameters_ds=tofd_stddev_on_model_grid_da.to_dataset(name = 'tofd_stddev')
-# tofd_parameters_ds['tofd_anisotropy']=tofd_anisotropy_on_model_grid_da
-# tofd_parameters_ds['tofd_orientation']=tofd_orientation_on_model_grid_da
-# tofd_parameters_ds['tofd_slope']=tofd_slope_on_model_grid_da
-
-# ### save to netcdf
-# ogwd_parameters_ds.to_netcdf(path_data_out+netcdf_model_grid_ogwd_params_out)
-# tofd_parameters_ds.to_netcdf(path_data_out+netcdf_model_grid_tofd_params_out)
