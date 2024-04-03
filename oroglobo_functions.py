@@ -23,23 +23,23 @@ path_data_in=oropar.paths_in["copernicus_90m"]
 tif_copernicus_90m_in=oropar.files_in["tif_copernicus_90m"]
 
 
-def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
+def get_copernicus90m_tiles_list_in_grid_box(grid_box_polygon):
     
     """
-    this function receives a shapely polygon representing the model gridbox
+    this function receives a shapely polygon representing a gridbox
     and returns the list of filenames of the copernicus 90m DEM tiles
-    which intersect the model gridbox.
+    which intersect the gridbox.
     
     the simplest way to do it is to scan all the globe one deg by one deg
     (copernicus tiles are 1x1 degs.) and check intersections with the 
-    model_grid_box_polygon.
+    grid_box_polygon.
     But this is a waste of computational time (a lot of times I have no 
     intersections); to avoid time waste, I check intersections only on a region
-    given by the boundaries of the model_grid_box_polygon + a frame around it.
+    given by the boundaries of the grid_box_polygon + a frame around it.
     the frame is thickness is "framethickness" (in degrees)
     """
     
-    minlon,minlat,maxlon,maxlat=model_grid_box_polygon.bounds
+    minlon,minlat,maxlon,maxlat=grid_box_polygon.bounds
     framethickness=2
     # I AM ASSUMING A -180/+180 GRID
     
@@ -64,13 +64,13 @@ def get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon):
             
             tile_polygon=Polygon([(westboundary_tile,southboundary_tile), (eastboundary_tile,southboundary_tile), (eastboundary_tile,northboundary_tile), (westboundary_tile,northboundary_tile)])
             
-            # both the model grid and the tile grid are on a common -90,90;180,180 grid, so i can check intersection (overlap) with shapely
+            # both the input grid box and the tile grid are on a common -90,90;180,180 grid, so i can check intersection (overlap) with shapely
             # I USE OVERLAPS&cCONTAINS&WITHIN INSTEAD OF INTERSECTS IN ORDER TO AVOID "TRUE" IF THE TWO PLYGONS SIMPLY "TOUCHES" EACH OTHER
-            # BUT THERE IS NO A TRUE OVERLAP (THAT IS THERE ARE NO POINTS OF THE TILE REALLY INSIDE THE MODEL GRID BOX).
+            # BUT THERE IS NO A TRUE OVERLAP (THAT IS THERE ARE NO POINTS OF THE TILE REALLY INSIDE THE input GRID BOX).
             # THIS IS NEEDED TO AVOID ERRORS IN THE NEXT CALCULATIONS.
             
             # TRY ALSO: INTERSECT AND !TOUCH
-            if model_grid_box_polygon.overlaps(tile_polygon) or model_grid_box_polygon.contains(tile_polygon) or model_grid_box_polygon.within(tile_polygon):
+            if grid_box_polygon.overlaps(tile_polygon) or grid_box_polygon.contains(tile_polygon) or grid_box_polygon.within(tile_polygon):
                 
                 # convert to ""4 hemispheres" format and open the file
                                 
@@ -250,6 +250,7 @@ def calculate_stddev_anis_orient_slope(data2d,dx,dy):
     
     
     return stddev,anisotropy,orientation,slope
+
 
 
 
@@ -469,3 +470,121 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     return ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
            ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
            tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope
+           
+           
+           
+def calculate_mean_orog_in_grid_box(km1_grid_box_polygon,tif_filenames_list):
+    
+    """
+    this function receives:
+        - a shapely polygon describing the input grid box
+        - a list of the DEM tiles intersecting the input grid box
+    and returns:
+        - the value of the mean orography inside the input grid box
+    that is done in the following steps:
+        1) create a xarray dataset with the DEM data, ordered by lat and lon;
+        if they are not on the disk,
+        it means that there is only sea on that area --> fill with zero.
+        2) calculate mean orog
+        
+    """
+    
+    tif_data_list=[]
+    tif_dlon_list=[]
+    
+    for tif_filename in tif_filenames_list:
+        
+        if os.path.isfile(tif_filename):
+            tif_data = rioxr.open_rasterio(tif_filename)[:,:-1,:-1].to_dataset(name='elev')           
+            # if the tile is not on disk, it means that it is all on sea --> do not consider it
+            # in the following, missing tiles will be treated as elev=0 
+            tif_dlon=abs(tif_data.x.values[1]-tif_data.x.values[0]) # this can vary across the copernicus dataset
+            tif_dlat=abs(tif_data.y.values[1]-tif_data.y.values[0]) # this is always the same, data are uniform in latitude
+            
+            tif_data_list.append(tif_data)
+            tif_dlon_list.append(tif_dlon)
+
+    if len(tif_data_list)>0: # if at least one tile exist --> if there is land, i have data
+        
+        # i have to check if the selected tif data have all the same "dlon"
+        # (i.e. the same longitudinal coordinates). Copernicus data have different
+        # dlon in different latitudinal bands in order to mantain an approx. costant
+        # spacing in meters. So when the model gridbox crosses specific latitudes
+        # (like +-85, +-80, +-70...+-50) tif files with different longitudinal
+        # coordinates and spacing are loaded; they must be "homogenized"
+        # before passing it to xr.combine_by_coords
+        
+        # are all dlons equal or not?
+        
+        if ( tif_dlon_list.count(tif_dlon_list[0]) == len(tif_dlon_list) ) == False:
+            
+            # if they are not all equal, proceed by steps:
+                
+            # 1) combine with combine_by_coords and fill with nan where there are no data. 
+            #    this means that will became nan:
+            #    - points on the sea
+            #    - the "spurious/duplicate" points that arise beacuse the grids are not equal 
+            #      (combine_by_coords create a grid with all longitudes in the two grids)  
+            all_tif_data_ds=xr.combine_by_coords(tif_data_list,fill_value=np.nan)
+            
+            # 2) fill the nans forward and backward with the nearest value after and before (limit="1 pixel")
+            #   (since in the worst case the fine grid spacing is half of the coarse grid spacing, it is supposed that limit=1 before and after is enough to fill gaps  
+            #   some sea points (the closest to the coasts) are "lost" (i.e. the became >0) with this procedure 
+            all_tif_data_ds=all_tif_data_ds.bfill(dim='x',limit=1)
+            all_tif_data_ds=all_tif_data_ds.ffill(dim='x',limit=1)
+            
+            # 3) transform all the nan still present to zero (i suppose that the remainig nans are sea)
+            all_tif_data_ds=all_tif_data_ds.fillna(0)
+            
+            # 4) get the larger dlon (lower resolution)
+            tif_larger_dlon=np.array(tif_dlon_list).max()
+            
+            # 5) get the bounds of the tiff data all together
+            all_tiff_westboundary= all_tif_data_ds.x.values[0]
+            all_tiff_eastboundary= all_tif_data_ds.x.values[-1]
+            all_tiff_northboundary=all_tif_data_ds.y.values[0]
+            all_tiff_southboundary=all_tif_data_ds.y.values[-1]
+            
+            # 6) build lat and lon arrays, equally spaced with spacing tif_larger_dlon,
+            #    which will be used to resample the data
+            newlat_resample=np.arange(all_tiff_northboundary,all_tiff_southboundary-0.001,-tif_dlat) # +0.001 to not exclude the last point
+            newlon_resample=np.arange(all_tiff_westboundary,all_tiff_eastboundary+0.001,tif_larger_dlon) # +0.001 to not exclude the last point
+            
+            # 7) resample the data at uniform resolution, consistent with the 
+            # lowest resolution tile
+            
+            all_tif_data_ds=all_tif_data_ds.interp(coords={"x": newlon_resample, "y": newlat_resample})
+            # again set nan to zero, if any
+            all_tif_data_ds=all_tif_data_ds.fillna(0)
+            
+        else:
+            
+            # if yes, data are have uniform grids, so
+            # exploit xarray to order the tiles by lat and lon; simply fill with zero where there are no data 
+            # it happens olny on the sea)
+            all_tif_data_ds=xr.combine_by_coords(tif_data_list,fill_value=0) # where no data (sea) --> =0
+       
+        
+        all_tif_data=all_tif_data_ds.elev.data[0]
+        lon=all_tif_data_ds.x.values
+        lat=all_tif_data_ds.y.values
+        # make a new xarray dataarray with lat, lon, orog
+        all_tif_data_da=xr.DataArray(
+           all_tif_data,
+           coords=[('latitude', lat),('longitude', lon)])
+        
+        # cut out only the point really inside the 1km grid box
+        km1_grid_box_westboundary = km1_grid_box_polygon.bounds[0]
+        km1_grid_box_southboundary= km1_grid_box_polygon.bounds[1]
+        km1_grid_box_eastboundary = km1_grid_box_polygon.bounds[2]
+        km1_grid_box_northboundary= km1_grid_box_polygon.bounds[3]
+        #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
+        all_tif_data_inside_1km_gridbox_da = all_tif_data_da.sel(latitude=slice(km1_grid_box_northboundary,km1_grid_box_southboundary),longitude=slice(km1_grid_box_westboundary,km1_grid_box_eastboundary))
+        
+        meanorog=np.mean(all_tif_data_inside_1km_gridbox_da.data)
+            
+    else: # if there are no data on disk --> the grid box is entirely on ocean
+        
+        meanorog=np.nan
+        
+    return meanorog

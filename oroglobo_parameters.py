@@ -23,7 +23,8 @@ paths_in = {
 
 paths_out = {
 	"img_out":"img_out/*GRIDNAME*/",
-    "data_out":"data_out/*GRIDNAME*/"
+    "data_out":"data_out/*GRIDNAME*/",
+    "1km_out": "data_out/km1/"
 }
 
 paths_work = {
@@ -46,7 +47,8 @@ files_out = {
     "img_model_grid_operational_orog":"model_grid_operational_orog_*GRIDNAME*.png",
     "netcdf_model_grid_operational_orog":"model_grid_operational_orog_*GRIDNAME*.nc",
     "netcdf_model_grid_ogwd_params":"model_grid_ogwd_params_*GRIDNAME*.nc",
-    "netcdf_model_grid_tofd_params":"model_grid_tofd_params_*GRIDNAME*.nc"
+    "netcdf_model_grid_tofd_params":"model_grid_tofd_params_*GRIDNAME*.nc",
+    "netcdf_1km_grid_orog_out":"km1_global_orog.nc"
 }
 
 files_work = {

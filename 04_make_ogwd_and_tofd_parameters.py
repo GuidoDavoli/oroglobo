@@ -141,7 +141,7 @@ for latindex in range(nlat_model):
         # determine which dem tiles to open.
         # the DEM tiles are on a 1x1 deg regular grid
         model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-        tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
+        tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
         print(tif_filenames_list,"SONO IO 1")
     
     #print(f'Time: {time.time() - start}')
@@ -166,7 +166,7 @@ for latindex in range(nlat_model):
         # determine which dem tiles to open.
         # the DEM tiles are on a 1x1 deg regular grid
         model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-        tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
+        tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
         print(tif_filenames_list,"SONO IO 2")
 
     #print(f'Time: {time.time() - start}')
@@ -210,7 +210,7 @@ for latindex in range(nlat_model):
                     # determine which dem tiles to open.
                     # the DEM tiles are on a 1x1 deg regular grid 
                     model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-                    tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
+                    tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
                     print(tif_filenames_list,"SONO IO 3")
                            
                 else:
@@ -230,14 +230,14 @@ for latindex in range(nlat_model):
                     westboundary_1=-180
                     eastboundary_1=eastboundary
                     model_grid_box_polygon_1=Polygon([(westboundary_1,southboundary), (eastboundary_1,southboundary), (eastboundary_1,northboundary), (westboundary_1,northboundary)])
-                    tif_filenames_list_1=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon_1)
+                    tif_filenames_list_1=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_1)
                     
                     # the second poligon goes from the calculated westboundary, which is at 180-something, up to eastboundary=+180
                 
                     westboundary_2=westboundary
                     eastboundary_2=180
                     model_grid_box_polygon_2=Polygon([(westboundary_2,southboundary), (eastboundary_2,southboundary), (eastboundary_2,northboundary), (westboundary_2,northboundary)])
-                    tif_filenames_list_2=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon_2)
+                    tif_filenames_list_2=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_2)
                     
                     tif_filenames_list=tif_filenames_list_1+tif_filenames_list_2
                     print(tif_filenames_list,"SONO IO 4")
@@ -270,7 +270,7 @@ for latindex in range(nlat_model):
                     # determine which dem tiles to open.
                     # the DEM tiles are on a 1x1 deg regular grid 
                     model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-                    tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
+                    tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
                     print(tif_filenames_list,"SONO IO 5")
                     
                 else:
@@ -290,7 +290,7 @@ for latindex in range(nlat_model):
                     westboundary_1=westboundary
                     eastboundary_1=180
                     model_grid_box_polygon_1=Polygon([(westboundary_1,southboundary), (eastboundary_1,southboundary), (eastboundary_1,northboundary), (westboundary_1,northboundary)])
-                    tif_filenames_list_1=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon_1)
+                    tif_filenames_list_1=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_1)
                     
                     # the second poligon goes from -180 to the calculated eastboundary, which is at -180+something
                 
@@ -298,7 +298,7 @@ for latindex in range(nlat_model):
                     eastboundary_2=eastboundary
                     
                     model_grid_box_polygon_2=Polygon([(westboundary_2,southboundary), (eastboundary_2,southboundary), (eastboundary_2,northboundary), (westboundary_2,northboundary)])
-                    tif_filenames_list_2=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon_2)
+                    tif_filenames_list_2=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_2)
                     
                     tif_filenames_list=tif_filenames_list_1+tif_filenames_list_2
                     print(tif_filenames_list,"SONO IO 6")
@@ -325,7 +325,7 @@ for latindex in range(nlat_model):
                 # the DEM tiles are on a 1x1 deg regular grid 
                 model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
                 #print(f'Time: {time.time() - start} | 1a')
-                tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_model_grid_box(model_grid_box_polygon)
+                tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
                 #print(f'Time: {time.time() - start} | 1b')
                 # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                 # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
