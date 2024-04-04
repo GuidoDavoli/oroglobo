@@ -477,7 +477,7 @@ def get_copernicus90m_data_xrds_from_tiles_list(tif_filenames_list):
             all_tif_data_ds=all_tif_data_ds.bfill(dim='x',limit=1)
             all_tif_data_ds=all_tif_data_ds.ffill(dim='x',limit=1)
             
-            # 3) transform all the nan still present to zero (i suppose that the remainig nans are sea)
+            # 3) transform all the nan still present to zero (i suppose that the remaining nans are sea)
             all_tif_data_ds=all_tif_data_ds.fillna(0)
             
             # 4) get the larger dlon (lower resolution)
