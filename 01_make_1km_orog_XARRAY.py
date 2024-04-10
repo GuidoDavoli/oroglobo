@@ -148,7 +148,7 @@ files_list.extend(glob.glob(path_data_in.replace("*SECTOR*", 'SE')+'*.tif'))
 files_list.extend(glob.glob(path_data_in.replace("*SECTOR*", 'SW')+'*.tif'))
 
 
-ds=xr.open_mfdataset(files_list, combine="by_coords", engine='rasterio', preprocess=preproc_ds)
+ds=xr.open_mfdataset(files_list, combine="by_coords", engine='rasterio', preprocess=preproc_ds, parallel=True)
 
 dataplot=ds.sel( longitude=slice(10.5,11.7) , latitude=slice(49.2,47.4) ).fillna(0).elev.data[0]
 
