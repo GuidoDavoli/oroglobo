@@ -17,6 +17,14 @@ import rioxarray as rioxr
 import matplotlib.pyplot as plt
 import glob
 import numpy as np
+import oroglobo_parameters as oropar
+
+
+# IMPORT PARAMETERS
+
+path_to_data_original_template=oropar.paths_in["copernicus_90m"]
+path_to_data_lowres_template=oropar.paths_in["copernicus_lowres"]
+
 
 def preproc_ds(ds):
     
@@ -50,15 +58,12 @@ def preproc_ds(ds):
     return ds
 
 
-path_to_data_original_template='/work_big/users/davoli/copernicus_dem_90m_*HEMISPHERE*/'
-path_to_data_lowres_template='/work_big/users/davoli/copernicus_dem_lowres/copernicus_dem_90m_*HEMISPHERE*/'
+sectors=['NE','NW','SE','SW']
 
-hemispheres=['NE','NW','SE','SW']
+for sec in sectors:
 
-for hem in hemispheres:
-
-    path_to_data_original=path_to_data_original_template.replace("*HEMISPHERE*", hem) 
-    path_to_data_lowres=path_to_data_lowres_template.replace("*HEMISPHERE*", hem) 
+    path_to_data_original=path_to_data_original_template.replace("*SECTOR*", sec) 
+    path_to_data_lowres=path_to_data_lowres_template.replace("*SECTOR*", sec) 
 
     files_list_original = glob.glob(path_to_data_original+'Copernicus_DSM_*.tif') # all the files for this hemisphere
 
