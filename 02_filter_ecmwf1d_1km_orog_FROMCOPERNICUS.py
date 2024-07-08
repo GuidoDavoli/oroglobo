@@ -150,8 +150,12 @@ oroplot.orography_plot(orogsmooth,path_img_out+img_1km_global_smooth_out,2400)
 print('smooth plot: done!')
 
 orogsmooth_da=xr.DataArray(orogsmooth, coords=[('latitude', lat),('longitude', lon)])
+
+# reverse the order of latitudes (compatibility with following scripts)
+orogsmooth_da=orogsmooth_da.isel(latitude=slice(None, None, -1))
+
 # save as netcdf
-orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out)
+orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out,engine="h5netcdf", encoding={'elev': {'dtype': 'float32', "zlib": True, "complevel": 5}})
 
 print('save to netcdf: done!')
 

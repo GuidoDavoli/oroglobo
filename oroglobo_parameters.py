@@ -60,8 +60,8 @@ files_work = {
 }
 
 model_grid = {
-	"GRIDNAME":"globo_KM312",
-    "gridspacing_max_km":312
+	"GRIDNAME":"globo_KM078",
+    "gridspacing_max_km":78
 }
 
 filtering_1km_ecmwf = {
