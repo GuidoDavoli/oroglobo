@@ -18,7 +18,8 @@ paths_in = {
 	"srtm30_data":"data_in/srtm30/",
 	"model_grids":"data_in/model_grids/",
 	"model_masks":"data_in/model_masks/",
-    "copernicus_90m":"/home/guidodavoli/cnr_work/dati/Copernicus_DEM/copernicus_dem_90m_*SECTOR*/"
+    "copernicus_90m":"/home/guidodavoli/cnr_work/dati/Copernicus_DEM/copernicus_dem_90m_*SECTOR*/",
+    "copernicus_lowres":"/home/guidodavoli/cnr_work/dati/Copernicus_DEM/copernicus_dem_lowres/copernicus_dem_90m_*SECTOR*/"
 }
 
 paths_out = {
@@ -37,7 +38,9 @@ files_in = {
 	"netcdf_model_mask":"masks_*GRIDNAME*.nc",
 	"txt_model_grid_lat":"*GRIDNAME*_lat.txt",
 	"txt_model_grid_lon":"*GRIDNAME*_lon.txt",
-    "tif_copernicus_90m":"Copernicus_DSM_30_*HEMISPHERE-NS**LAT2DIGITS*_00_*HEMISPHERE-EW**LON3DIGITS*_00_DEM.tif"	
+    "tif_copernicus_90m":"Copernicus_DSM_30_*HEMISPHERE-NS**LAT2DIGITS*_00_*HEMISPHERE-EW**LON3DIGITS*_00_DEM.tif",
+    "netcdf_copernicus_lowres":"Copernicus_DSM_30_*HEMISPHERE-NS**LAT2DIGITS*_00_*HEMISPHERE-EW**LON3DIGITS*_00_DEM.tif.nc",
+    "netcdf_copernicus_global_0_360":"CopernicusGlobal_float32_0_360.nc"
 }
 
 files_out = {

@@ -54,14 +54,15 @@ import oroglobo_functions as orofunc
 import oroglobo_plotting as oroplot
 from shapely.geometry import Polygon
 import glob
-
+import time
 
 
 def preproc_ds(ds):
     
-    ds=ds.isel( x=slice(0,len(ds.x)-1) , y=slice(0,len(ds.y)-1) ) # exclude the last lat and lon, which are repetitions of the first point in adjacent tiles.
-    ds=ds.rename({'x':'longitude','y':'latitude'}) # change names
-    ds=ds.rename({'band_data':'elev'}) # change names
+    #print(ds)
+    #ds=ds.isel( x=slice(0,len(ds.x)-1) , y=slice(0,len(ds.y)-1) ) # exclude the last lat and lon, which are repetitions of the first point in adjacent tiles.
+    #ds=ds.rename({'x':'longitude','y':'latitude'}) # change names
+    #ds=ds.rename({'band_data':'elev'}) # change names
     
     nlat=len(ds.latitude)
     nlon=len(ds.longitude)
@@ -87,78 +88,135 @@ def preproc_ds(ds):
     return ds
 
 
+def wrap360(ds, lon='lon'):
+    """
+    
+    https://github.com/pydata/xarray/issues/577
+    
+    wrap longitude coordinates to 0..360
+
+    Parameters
+    ----------
+    ds : Dataset
+        object with longitude coordinates
+    lon : string
+        name of the longitude ('lon', 'longitude', ...)
+
+    Returns
+    -------
+    wrapped : Dataset
+        Another dataset array wrapped around.
+    """
+
+    # wrap -180..179 to 0..359    
+    ds.coords[lon] = np.mod(ds[lon], 360)
+
+    # sort the data
+    return ds.reindex({ lon : np.sort(ds[lon])})
+
 
 
 # IMPORT PARAMETERS
 
-path_data_in=oropar.paths_in["copernicus_90m"]
+path_data_in=oropar.paths_in["copernicus_lowres"]
 path_data_out=oropar.paths_out["1km_out"]
 
 path_img_out=oropar.paths_out["1km_out"]
 
 netcdf_1km_grid_orog_out=oropar.files_out["netcdf_1km_grid_orog_out"]
 img_1km_global_orog_out=oropar.files_out["img_1km_global_orog"]
-tif_copernicus_90m_in=oropar.files_in["tif_copernicus_90m"]
+netcdf_copernicus_lowres_in=oropar.files_in["netcdf_copernicus_lowres"]
 
-
-#########################################
-######### Define the 1km grid ###########
-## a regular latlon grid without poles ##
-#########################################
-
-nlon_1km=np.int32(40000) # must be even
-nlat_1km=np.int32(20000) # must be even
-
-dlon_1km=np.float32(360)/nlon_1km
-dlat_1km=np.float32(180)/nlat_1km
-
-lon_pos_1km=np.zeros(np.int32(nlon_1km/2),dtype='float32')
-lat_pos_1km=np.zeros(np.int32(nlat_1km/2),dtype='float32')
-lon_neg_1km=np.zeros(np.int32(nlon_1km/2),dtype='float32')
-lat_neg_1km=np.zeros(np.int32(nlat_1km/2),dtype='float32')
-
-dlon_half_1km=np.float32(dlon_1km/2)
-dlat_half_1km=np.float32(dlat_1km/2)
-
-lon0_1km=dlon_half_1km
-lat0_1km=dlat_half_1km
-
-for ilat in range(np.int32(nlat_1km/2)):
-    lat_pos_1km[ilat]=np.float32(+lat0_1km+ilat*dlat_1km)
-    lat_neg_1km[ilat]=np.float32(-lat0_1km-ilat*dlat_1km)
-    
-for ilon in range(np.int32(nlon_1km/2)):
-    lon_pos_1km[ilon]=np.float32(+lon0_1km+ilon*dlon_1km)
-    lon_neg_1km[ilon]=np.float32(-lon0_1km-ilon*dlon_1km)
-
-lat_1km=np.append(np.flip(lat_neg_1km), lat_pos_1km) # from -90 to +90
-lon_1km=np.append(np.flip(lon_neg_1km), lon_pos_1km) # from -180 to + 180
-
-
-##### INITIALIZE THE ARRAY TO STORE THE 1KM OROGRAPHY
-
-meanorog_1km=np.zeros((nlat_1km,nlon_1km))
-
-
+# =============================================================================
+# 
+# #########################################
+# ######### Define the 1km grid ###########
+# ## a regular latlon grid without poles ##
+# #########################################
+# 
+# nlon_1km=np.int32(40000) # must be even
+# nlat_1km=np.int32(20000) # must be even
+# 
+# dlon_1km=np.float32(360)/nlon_1km
+# dlat_1km=np.float32(180)/nlat_1km
+# 
+# lon_pos_1km=np.zeros(np.int32(nlon_1km/2),dtype='float32')
+# lat_pos_1km=np.zeros(np.int32(nlat_1km/2),dtype='float32')
+# lon_neg_1km=np.zeros(np.int32(nlon_1km/2),dtype='float32')
+# lat_neg_1km=np.zeros(np.int32(nlat_1km/2),dtype='float32')
+# 
+# dlon_half_1km=np.float32(dlon_1km/2)
+# dlat_half_1km=np.float32(dlat_1km/2)
+# 
+# lon0_1km=dlon_half_1km
+# lat0_1km=dlat_half_1km
+# 
+# for ilat in range(np.int32(nlat_1km/2)):
+#     lat_pos_1km[ilat]=np.float32(+lat0_1km+ilat*dlat_1km)
+#     lat_neg_1km[ilat]=np.float32(-lat0_1km-ilat*dlat_1km)
+#     
+# for ilon in range(np.int32(nlon_1km/2)):
+#     lon_pos_1km[ilon]=np.float32(+lon0_1km+ilon*dlon_1km)
+#     lon_neg_1km[ilon]=np.float32(-lon0_1km-ilon*dlon_1km)
+# 
+# lat_1km=np.append(np.flip(lat_neg_1km), lat_pos_1km) # from -90 to +90
+# lon_1km=np.append(np.flip(lon_neg_1km), lon_pos_1km) # from -180 to + 180
+# 
+# 
+# ##### INITIALIZE THE ARRAY TO STORE THE 1KM OROGRAPHY
+# 
+# meanorog_1km=np.zeros((nlat_1km,nlon_1km))
+# 
+# 
+# =============================================================================
 ##### LOAD DATA WITH XARRAY
 
-files_list =      glob.glob(path_data_in.replace("*SECTOR*", 'NE')+'*.tif')
-files_list.extend(glob.glob(path_data_in.replace("*SECTOR*", 'NW')+'*.tif'))
-files_list.extend(glob.glob(path_data_in.replace("*SECTOR*", 'SE')+'*.tif'))
-files_list.extend(glob.glob(path_data_in.replace("*SECTOR*", 'SW')+'*.tif'))
+
+sectors=['NE','NW','SE','SW']
+#sectors=['SW']
+
+files_list_lowres=[]
+
+for sec in sectors:
+
+    path_to_data_lowres=path_data_in.replace("*SECTOR*", sec) 
+
+    files_list_lowres.extend(glob.glob(path_to_data_lowres+'Copernicus_DSM_*.tif.nc')) # all the files for this sector
 
 
-ds=xr.open_mfdataset(files_list, combine="by_coords", engine='rasterio', preprocess=preproc_ds, parallel=True)
+start = time.time()
 
-dataplot=ds.sel( longitude=slice(10.5,11.7) , latitude=slice(49.2,47.4) ).fillna(0).elev.data[0]
+ds=xr.open_mfdataset(files_list_lowres, combine="by_coords", preprocess=preproc_ds, parallel=True)
 
-oroplot.orography_plot(dataplot, 'figprova.png', 400)
+end = time.time()
+print("Open_mfdataset: ",str(end - start), ' s')
+
+#dataplot=ds.sel( longitude=slice(10.5,11.7) , latitude=slice(49.2,47.4) ).fillna(0).elev.data[0]
+
+#oroplot.orography_plot(dataplot, 'figprova.png', 400)
+
+### non so perchè ci sono nan lungo longitudine -> dropna
+#ds=ds.dropna('longitude')
+#ds=ds.dropna('latitude')
+#dataplot=ds.sel( longitude=slice(5.5,15.7) , latitude=slice(39.2,31.4) ).elev.data
+#dataplot=ds.sel( longitude=slice(5.5,15.7) , latitude=slice(39.2,31.4) ).dropna('longitude').elev.data
+
+#### convert longitudes to 0...360
+
+ds=wrap360(ds,'longitude')
 
 
+start = time.time()
+# così pesa meno ma panoply non legge
+#ds.to_netcdf(path_data_out+'CopernicusGlobal.nc',engine="h5netcdf", encoding={'elev': {"zlib": True, "complevel": 5}})
+# così pesa di più ma panoply legge
+ds.to_netcdf(path_data_out+'CopernicusGlobal_float32_0_360.nc',engine="h5netcdf", encoding={'elev': {'dtype': 'float32', "zlib": True, "complevel": 5}})
 
+end = time.time()
+print("save netcdf: ",str(end - start), ' s')
 
-
-
+# TRY: DIFFERENT CHUNKSIZE FOR LOADING DATA TO SEE IF THERE IS A SPEEDUP;
+#      DIFFERENT OPTIONS FOR NETCDF SAVING TO SEE IF THERE IS A SPEEDUP/SPACE SAVING
 
 """
 #########################################
