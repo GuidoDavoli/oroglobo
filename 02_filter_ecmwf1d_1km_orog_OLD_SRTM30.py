@@ -30,11 +30,11 @@ gridname=oropar.model_grid["GRIDNAME"]
 gridspacing_max_km=oropar.model_grid["gridspacing_max_km"]
 
 
-path_data_in=oropar.paths_out["1km_out"]
+path_data_in=oropar.paths_in["srtm30_data"]
 path_img_out=oropar.paths_out["img_out"].replace("*GRIDNAME*", gridname) 
 path_data_out=oropar.paths_work["workdir_grid"].replace("*GRIDNAME*", gridname) 
 
-netcdf_orog_in=oropar.files_in["netcdf_copernicus_global_0_360"]
+netcdf_orog_in=oropar.files_in["netcdf_srtm30_global_nan_to_zero_0_360"]
 
 img_1km_global_raw_out=oropar.files_out["img_1km_global_orog"]
 img_1km_global_smooth_out=oropar.files_out["img_1km_global_orog_smooth"]
@@ -150,12 +150,8 @@ oroplot.orography_plot(orogsmooth,path_img_out+img_1km_global_smooth_out,2400)
 print('smooth plot: done!')
 
 orogsmooth_da=xr.DataArray(orogsmooth, coords=[('latitude', lat),('longitude', lon)])
-
-# reverse the order of latitudes (compatibility with following scripts)
-orogsmooth_da=orogsmooth_da.isel(latitude=slice(None, None, -1))
-
 # save as netcdf
-orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out,engine="h5netcdf", encoding={'elev': {'dtype': 'float32', "zlib": True, "complevel": 5}})
+orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out)
 
 print('save to netcdf: done!')
 
