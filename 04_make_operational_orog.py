@@ -31,6 +31,7 @@ path_img_out=oropar.paths_out["img_out"].replace("*GRIDNAME*", gridname)
 
 netcdf_model_grid_orog_in=oropar.files_work["netcdf_model_grid_orog"].replace("*GRIDNAME*", gridname) 
 netcdf_model_mask_in=oropar.files_in["netcdf_model_mask"].replace("*GRIDNAME*", gridname) 
+netcdf_model_mask_lake_in=oropar.files_in["netcdf_model_mask_lake"].replace("*GRIDNAME*", gridname) 
 netcdf_model_grid_operational_orog_out=oropar.files_out["netcdf_model_grid_operational_orog"].replace("*GRIDNAME*", gridname) 
 img_model_grid_operational_orog_out=oropar.files_out["img_model_grid_operational_orog"].replace("*GRIDNAME*", gridname) 
 
@@ -73,15 +74,25 @@ print('zonal filtering: done!')
 
 
 ############ MASKING
+MASK=np.where(data_model_grid_orog.elev==0,0,1)
 
-# Open the mask
+operational_orog_on_model_grid=operational_orog_on_model_grid*MASK
+
+# Open the land-sea mask
 data_model_mask = xr.open_dataset(path_data_in_mask+netcdf_model_mask_in)
 land_sea_mask = data_model_mask["glog.msk"].values[:,:-2]
 
+# Open the lake mask
+data_model_mask_lake = xr.open_dataset(path_data_in_mask+netcdf_model_mask_lake_in)
+lake_mask = data_model_mask_lake["flake"].values[:,:-2]
+
 # Apply the mask
 # THIS IS WRONG, PERCHÈ I LAGHI SONO =0 COME MASK MA IN REALTÀ NON SONO A ZERO COME ALTITUDINE
-operational_orog_on_model_grid=np.where(land_sea_mask==1, operational_orog_on_model_grid, 0)
-operational_orog_on_model_grid=np.where(land_sea_mask==0, 0, operational_orog_on_model_grid)
+#operational_orog_on_model_grid=np.where(land_sea_mask==1, operational_orog_on_model_grid, 0)
+operational_orog_on_model_grid=np.where((land_sea_mask==1) | (lake_mask>0), operational_orog_on_model_grid, 0)
+#operational_orog_on_model_grid=np.where((land_sea_mask==1) | ( (land_sea_mask<1) & (operational_orog_on_model_grid>1) ), operational_orog_on_model_grid, 0)
+operational_orog_on_model_grid=np.where((land_sea_mask==0) & (lake_mask==0), 0, operational_orog_on_model_grid)
+#operational_orog_on_model_grid=np.where((land_sea_mask==0) & (operational_orog_on_model_grid <100), 0, operational_orog_on_model_grid)
 
 
 ### PLOT
