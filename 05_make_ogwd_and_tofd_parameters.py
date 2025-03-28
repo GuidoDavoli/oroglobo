@@ -418,6 +418,7 @@ for latindex in range(nlat_model):
 # at the end, when all 2d arrays of parameters are filled, save netcdf on disk
 
 ##### CHECK IF THERE IS THE NEED TO CHANGE -180...180 TO 0...360
+##### YES!!! GLOBO WANTS -90..+90 ; 0..360 (+ GHOST LONGITUDE POINTS...) 
 
 ### create data arrays
 ogwd_F1_on_model_grid_da=xr.DataArray(ogwd_F1_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])

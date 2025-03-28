@@ -88,6 +88,7 @@ lake_mask = data_model_mask_lake["flake"].values[:,:-2]
 
 # Apply the mask
 # THIS IS WRONG, PERCHÈ I LAGHI SONO =0 COME MASK MA IN REALTÀ NON SONO A ZERO COME ALTITUDINE
+# CORRECTION:
 #operational_orog_on_model_grid=np.where(land_sea_mask==1, operational_orog_on_model_grid, 0)
 operational_orog_on_model_grid=np.where((land_sea_mask==1) | (lake_mask>0), operational_orog_on_model_grid, 0)
 #operational_orog_on_model_grid=np.where((land_sea_mask==1) | ( (land_sea_mask<1) & (operational_orog_on_model_grid>1) ), operational_orog_on_model_grid, 0)
