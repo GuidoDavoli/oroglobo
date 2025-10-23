@@ -7,14 +7,18 @@ Created on Mon Nov 20 12:21:48 2023
 """
 
 import os
-import oroglobo_parameters as oropar
+import yaml
 
+configname='oroglobo_parameters.yaml'
 
-gridname=oropar.model_grid["GRIDNAME"]
+with open(configname, 'r', encoding='utf-8') as file:
+    cfg = yaml.load(file, Loader=yaml.FullLoader)
+
+gridname=cfg['model_grid']['GRIDNAME']
 
 # if output folders do not exist, create them
 
-folders=oropar.paths_out
+folders=cfg['paths_out']
 
 for x in folders:
     
@@ -25,7 +29,7 @@ for x in folders:
         
 # if working folders do not exist, create them
 
-folders=oropar.paths_work
+folders=cfg['paths_work']
 
 for x in folders:
     
