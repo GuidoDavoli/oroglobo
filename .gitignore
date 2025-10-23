@@ -41,7 +41,7 @@ __*
 
 # Data files #
 ######################
-*.nc
+
 
 # Other #
 #########
@@ -50,3 +50,4 @@ OLD*
 *.png
 GITIGNORE*
 /img_out/
+/data_out/
