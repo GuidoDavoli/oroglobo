@@ -11,6 +11,7 @@ COMMON ROUTINES FOR FILTERING IN OROGLOBO
 
 import scipy.ndimage as ndimage
 import numpy as np
+from multiprocessing import Pool
 
 
 ######### routines for local minmax constraint, for 2d data, with constant ####
@@ -59,7 +60,7 @@ def apply_local_minmax_constraint_2D_constantN(data2D_filtered,data2D_original,N
 ######### (applied axis by axis) ##############################################
 
 
-def localminimum_2D_axis1(data2D,Naxis1,how):
+def localminimum_2D_axis1(data2D,Naxis1,how,Nparal=1):
     
     # RETURN A MAP OF THE local MINIMUM VALUE AMONG
     # axis1; lenght scale specified in Naxis1; can be variable (SEE ZADRA 2018, SECTION 5.2)
@@ -71,11 +72,23 @@ def localminimum_2D_axis1(data2D,Naxis1,how):
     for i in range(naxis0):
         
         data2D_localmin_axis1[i,:]=ndimage.minimum_filter1d(data2D[i,:],Naxis1[i],mode=how)
+    """
+    def funzA(i):
+        data2D_localmin_axis1_i=ndimage.minimum_filter1d(data2D[i,:],Naxis1[i],mode=how) 
+        return data2D_localmin_axis1_i
     
+    pool = Pool(processes=Nparal)
+    ####### HERE COMES THE CHANGE #######
+    results = [pool.apply_async(funzA, [val]) for val in range(naxis0)]
+    for idx, val in enumerate(results):
+        data2D_localmin_axis1[idx,:]= val.get()
+    #######
+    pool.close()
+    """
     return data2D_localmin_axis1
 
 
-def localmaximum_2D_axis1(data2D,Naxis1,how):
+def localmaximum_2D_axis1(data2D,Naxis1,how,Nparal=1):
     
     # RETURN A MAP OF THE local MAXIMUM VALUE AMONG
     # axis1; lenght scale specified in Naxis1; can be variable (SEE ZADRA 2018, SECTION 5.2)
@@ -87,11 +100,23 @@ def localmaximum_2D_axis1(data2D,Naxis1,how):
     for i in range(naxis0):
         
         data2D_localmax_axis1[i,:]=ndimage.maximum_filter1d(data2D[i,:],Naxis1[i],mode=how)
+    """
+    def funzB(i):
+        data2D_localmax_axis1_i=ndimage.maximum_filter1d(data2D[i,:],Naxis1[i],mode=how)
+        return data2D_localmax_axis1_i
     
+    pool = Pool(processes=Nparal)
+    ####### HERE COMES THE CHANGE #######
+    results = [pool.apply_async(funzB, [val]) for val in range(naxis0)]
+    for idx, val in enumerate(results):
+        data2D_localmax_axis1[idx,:]= val.get()
+    #######
+    pool.close()
+    """
     return data2D_localmax_axis1
 
 
-def localminimum_2D_axis0(data2D,Naxis0,how):
+def localminimum_2D_axis0(data2D,Naxis0,how,Nparal=1):
     
     # RETURN A MAP OF THE local MINIMUM VALUE AMONG
     # axis0; lenght scale specified in Naxis0; can be variable (SEE ZADRA 2018, SECTION 5.2)
@@ -103,11 +128,23 @@ def localminimum_2D_axis0(data2D,Naxis0,how):
     for j in range(naxis1):
         
         data2D_localmin_axis0[:,j]=ndimage.minimum_filter1d(data2D[:,j],Naxis0[j],mode=how)
+    """
+    def funzC(j):
+        data2D_localmin_axis0_j=ndimage.minimum_filter1d(data2D[:,j],Naxis0[j],mode=how)
+        return data2D_localmin_axis0_j
     
+    pool = Pool(processes=Nparal)
+    ####### HERE COMES THE CHANGE #######
+    results = [pool.apply_async(funzC, [val]) for val in range(naxis1)]
+    for idx, val in enumerate(results):
+        data2D_localmin_axis0[:,idx]= val.get()
+    #######
+    pool.close()
+    """
     return data2D_localmin_axis0
 
 
-def localmaximum_2D_axis0(data2D,Naxis0,how):
+def localmaximum_2D_axis0(data2D,Naxis0,how,Nparal=1):
     
     # RETURN A MAP OF THE local MAXIMUM VALUE AMONG
     # axis0; lenght scale specified in Naxis0; can be variable (SEE ZADRA 2018, SECTION 5.2)
@@ -119,11 +156,23 @@ def localmaximum_2D_axis0(data2D,Naxis0,how):
     for j in range(naxis1):
         
         data2D_localmax_axis0[:,j]=ndimage.maximum_filter1d(data2D[:,j],Naxis0[j],mode=how)
+    """
+    def funzD(j):
+        data2D_localmax_axis0_j=ndimage.maximum_filter1d(data2D[:,j],Naxis0[j],mode=how)
+        return data2D_localmax_axis0_j
     
+    pool = Pool(processes=Nparal)
+    ####### HERE COMES THE CHANGE #######
+    results = [pool.apply_async(funzD, [val]) for val in range(naxis1)]
+    for idx, val in enumerate(results):
+        data2D_localmax_axis0[:,idx]= val.get()
+    #######
+    pool.close()
+    """
     return data2D_localmax_axis0
 
 
-def apply_local_minmax_constraint_2D_variableN(data2D_filtered,data2D_original,Nzonal,Nmeridional,how):
+def apply_local_minmax_constraint_2D_variableN(data2D_filtered,data2D_original,Nzonal,Nmeridional,how,Nparal=1):
     
     # APPLIES THE LOCAL MINIMUM/MAXIMUM CONSTRAINT AS DESCRIBED IN
     # ZADRA, 2018, SECTION 5.2. 
@@ -137,15 +186,24 @@ def apply_local_minmax_constraint_2D_variableN(data2D_filtered,data2D_original,N
     if how[1]=='symmetric':
         how[1]='mirror'
     
-    Hlmin0=localminimum_2D_axis0(data2D_original, Nmeridional, how[0])
-    Hlmin1=localminimum_2D_axis1(data2D_original, Nzonal, how[1])
+    Hlmin0=localminimum_2D_axis0(data2D_original, Nmeridional, how[0], Nparal)
+    Hlmin1=localminimum_2D_axis1(data2D_original, Nzonal, how[1], Nparal)
     Hlmin=np.minimum(Hlmin0,Hlmin1)
-    
-    Hlmax0=localmaximum_2D_axis0(data2D_original, Nmeridional, how[0])
-    Hlmax1=localmaximum_2D_axis1(data2D_original, Nzonal, how[1])
+    del Hlmin0 # not needed anymore, free some memory
+    del Hlmin1 # not needed anymore, free some memory
+
+    Hlmax0=localmaximum_2D_axis0(data2D_original, Nmeridional, how[0], Nparal)
+    Hlmax1=localmaximum_2D_axis1(data2D_original, Nzonal, how[1], Nparal)
     Hlmax=np.maximum(Hlmax0,Hlmax1)
+    del Hlmax0 # not needed anymore, free some memory
+    del Hlmax1 # not needed anymore, free some memory
     
-    return np.minimum( np.maximum( data2D_filtered,Hlmin ) , Hlmax )
+    A=np.maximum( data2D_filtered,Hlmin )
+    
+    del data2D_filtered # not needed anymore, free some memory
+    del Hlmin # not needed anymore, free some memory
+    
+    return np.minimum( A , Hlmax )
 
 
 
