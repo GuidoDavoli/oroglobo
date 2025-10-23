@@ -49,3 +49,4 @@ __*
 OLD*
 *.png
 GITIGNORE*
+/img_out/
