@@ -10,7 +10,6 @@ import os
 import yaml
 
 configname='oroglobo_parameters.yaml'
-
 with open(configname, 'r', encoding='utf-8') as file:
     cfg = yaml.load(file, Loader=yaml.FullLoader)
 
