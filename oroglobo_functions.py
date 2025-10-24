@@ -9,18 +9,20 @@ Created on Wed Nov 22 11:48:14 2023
 import numpy as np
 from shapely import Polygon
 import LatLon23
-import oroglobo_parameters as oropar
 import rioxarray as rioxr
 import xarray as xr
 import os
-import time
 from haversine import haversine
-start = time.time()
+import yaml
 
 
 # IMPORT PARAMETERS
-path_data_in=oropar.paths_in["copernicus_90m"]
-tif_copernicus_90m_in=oropar.files_in["tif_copernicus_90m"]
+configname='oroglobo_parameters.yaml'
+with open(configname, 'r', encoding='utf-8') as file:
+    cfg = yaml.load(file, Loader=yaml.FullLoader)
+
+path_data_in=cfg['paths_in']["copernicus_90m"]
+tif_copernicus_90m_in=cfg['files_in']["tif_copernicus_90m"]
 
 
 def get_copernicus90m_tiles_list_in_grid_box(grid_box_polygon):
@@ -382,7 +384,8 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
            
            
            
-def calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(model_grid_box_polygon,all_tif_data_ds,operational_mean_orog_in_model_grid_box):
+def calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid_box_polygon,
+                                                                     all_tif_data_ds,operational_mean_orog_in_model_grid_box):
     
     """
     this function receives:
@@ -442,14 +445,16 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(model_grid_
     plt.show()
     """
     # cut out only the point really inside the model grid box
-    model_grid_box_westboundary = model_grid_box_polygon.bounds[0]
-    model_grid_box_southboundary= model_grid_box_polygon.bounds[1]
-    model_grid_box_eastboundary = model_grid_box_polygon.bounds[2]
-    model_grid_box_northboundary= model_grid_box_polygon.bounds[3]
+    #model_grid_box_westboundary = model_grid_box_polygon.bounds[0]
+    #model_grid_box_southboundary= model_grid_box_polygon.bounds[1]
+    #model_grid_box_eastboundary = model_grid_box_polygon.bounds[2]
+    #model_grid_box_northboundary= model_grid_box_polygon.bounds[3]
     #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
-    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
-    subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
+    #subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
+    #subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
     
+    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da
+    subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da
     
     lon_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.longitude.values
     lat_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.latitude.values
