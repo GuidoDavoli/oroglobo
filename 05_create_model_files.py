@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul  9 11:26:37 2024
 
-@author: guidodavoli
+@author: Guido Davoli - CNR ISAC
 
+This code:
 
-does the last operations needed to fix oroglobo provisional output
-and create a netcdf fully compatible with GLOBO.
+    - perform the last operations needed to store OroGlobo output
+    in netcdf files with a structure fully compatible with the GLOBO model.
 
 """
 
@@ -59,9 +59,6 @@ path_data_out=cfg['paths_out']["data_out"].replace("*GRIDNAME*", gridname)
 
 data_ds=xr.open_dataset(path_data_out+'model_grid_tofd_params_'+gridname+'.nc')
 
-data_ds.tofd_stddev.data[:,0]=data_ds.tofd_stddev.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.tofd_stddev.data[:,-1]=data_ds.tofd_stddev.data[:,-2]   # fix points along dateline since they are not calculated at present
-
 data_ds=wrap360(data_ds,'longitude')
 
 tofd_stddev=data_ds.tofd_stddev.data
@@ -73,39 +70,12 @@ new_tofd_stddev[:,1:-1]=tofd_stddev # fill with stddev, except ghost points
 new_tofd_stddev[:,0]=new_tofd_stddev[:,-2] # repeat extra longitudes. like in geo.F90 row 465
 new_tofd_stddev[:,-1]=new_tofd_stddev[:,1] # repeat extra longitudes. like in geo.F90 row 465
 
-new_tofd_stddev[0,:]=np.mean(new_tofd_stddev[1,:])    # put a value at poles (mean of adiacent points)
-new_tofd_stddev[-1,:]=np.mean(new_tofd_stddev[-2,:])  # put a value at poles (mean of adiacent points)
-
 new_tofd_stddev=np.nan_to_num(new_tofd_stddev)  # replace nan with zeros
 
 
 ############# open and read ogwd file
 
 data_ds=xr.open_dataset(path_data_out+'model_grid_ogwd_params_'+gridname+'.nc')
-
-data_ds.ogwd_stddev.data[:,0]=data_ds.ogwd_stddev.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_stddev.data[:,-1]=data_ds.ogwd_stddev.data[:,-2]   # fix points along dateline since they are not calculated at present
-
-data_ds.ogwd_slope.data[:,0]=data_ds.ogwd_slope.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_slope.data[:,-1]=data_ds.ogwd_slope.data[:,-2]   # fix points along dateline since they are not calculated at present
-
-data_ds.ogwd_orientation.data[:,0]=data_ds.ogwd_orientation.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_orientation.data[:,-1]=data_ds.ogwd_orientation.data[:,-2]   # fix points along dateline since they are not calculated at present
-
-data_ds.ogwd_anisotropy.data[:,0]=data_ds.ogwd_stddev.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_anisotropy.data[:,-1]=data_ds.ogwd_stddev.data[:,-2]   # fix points along dateline since they are not calculated at present
-
-data_ds.ogwd_hamp.data[:,0]=data_ds.ogwd_hamp.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_hamp.data[:,-1]=data_ds.ogwd_hamp.data[:,-2]   # fix points along dateline since they are not calculated at present
-
-data_ds.ogwd_F1.data[:,0]=data_ds.ogwd_F1.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_F1.data[:,-1]=data_ds.ogwd_F1.data[:,-2]   # fix points along dateline since they are not calculated at present
-
-data_ds.ogwd_F2.data[:,0]=data_ds.ogwd_F2.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_F2.data[:,-1]=data_ds.ogwd_F2.data[:,-2]   # fix points along dateline since they are not calculated at present
-
-data_ds.ogwd_F3.data[:,0]=data_ds.ogwd_F3.data[:,1]     # fix points along dateline since they are not calculated at present
-data_ds.ogwd_F3.data[:,-1]=data_ds.ogwd_F3.data[:,-2]   # fix points along dateline since they are not calculated at present
 
 data_ds=wrap360(data_ds,'longitude')
 
@@ -153,23 +123,6 @@ new_ogwd_F2[:,-1]=new_ogwd_F2[:,1] # repeat extra longitudes. like in geo.F90 ro
 new_ogwd_F3[:,0]=new_ogwd_F3[:,-2] # repeat extra longitudes. like in geo.F90 row 465
 new_ogwd_F3[:,-1]=new_ogwd_F3[:,1] # repeat extra longitudes. like in geo.F90 row 465
 
-new_ogwd_stddev[0,:]=np.mean(new_ogwd_stddev[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_stddev[-1,:]=np.mean(new_ogwd_stddev[-2,:])  # put a value at poles (mean of adiacent points)
-new_ogwd_slope[0,:]=np.mean(new_ogwd_slope[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_slope[-1,:]=np.mean(new_ogwd_slope[-2,:])  # put a value at poles (mean of adiacent points)
-new_ogwd_orientation[0,:]=np.mean(new_ogwd_orientation[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_orientation[-1,:]=np.mean(new_ogwd_orientation[-2,:])  # put a value at poles (mean of adiacent points)
-new_ogwd_anisotropy[0,:]=np.mean(new_ogwd_anisotropy[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_anisotropy[-1,:]=np.mean(new_ogwd_anisotropy[-2,:])  # put a value at poles (mean of adiacent points)
-new_ogwd_hamp[0,:]=np.mean(new_ogwd_hamp[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_hamp[-1,:]=np.mean(new_ogwd_hamp[-2,:])  # put a value at poles (mean of adiacent points)
-new_ogwd_F1[0,:]=np.mean(new_ogwd_F1[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_F1[-1,:]=np.mean(new_ogwd_F1[-2,:])  # put a value at poles (mean of adiacent points)
-new_ogwd_F2[0,:]=np.mean(new_ogwd_F2[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_F2[-1,:]=np.mean(new_ogwd_F2[-2,:])  # put a value at poles (mean of adiacent points)
-new_ogwd_F3[0,:]=np.mean(new_ogwd_F3[1,:])    # put a value at poles (mean of adiacent points)
-new_ogwd_F3[-1,:]=np.mean(new_ogwd_F3[-2,:])  # put a value at poles (mean of adiacent points)
-
 new_ogwd_stddev=np.nan_to_num(new_ogwd_stddev)  # replace nan with zeros
 new_ogwd_slope=np.nan_to_num(new_ogwd_slope)  # replace nan with zeros
 new_ogwd_orientation=np.nan_to_num(new_ogwd_orientation)  # replace nan with zeros
@@ -184,9 +137,6 @@ new_ogwd_F3=np.nan_to_num(new_ogwd_F3)  # replace nan with zeros
 
 data_ds=xr.open_dataset(path_data_out+'model_grid_operational_orog_'+gridname+'.nc')
 
-#data_ds.elev.data[:,0]=data_ds.elev.data[:,1]     # fix points along dateline since they are not calculated at present
-#data_ds.elev.data[:,-1]=data_ds.elev.data[:,-2]   # fix points along dateline since they are not calculated at present
-
 data_ds=wrap360(data_ds,'longitude')
 
 elev=data_ds.elev.data
@@ -198,12 +148,9 @@ new_elev[:,1:-1]=elev # fill with elev, except ghost points
 new_elev[:,0]=new_elev[:,-2] # repeat extra longitudes. like in geo.F90 row 465
 new_elev[:,-1]=new_elev[:,1] # repeat extra longitudes. like in geo.F90 row 465
 
-new_elev[0,:]=np.mean(new_elev[1,:])    # put a value at poles (mean of adiacent points)
-new_elev[-1,:]=np.mean(new_elev[-2,:])  # put a value at poles (mean of adiacent points)
-
 new_elev=np.nan_to_num(new_elev)  # replace nan with zeros
 
-# save netcdf
+############ save netcdf
 
 lats=data_ds.latitude.data
 
@@ -240,8 +187,6 @@ sgo_ds=xr.merge((new_tofd_stddev_da,
 
 elev_ds=new_elev_da.to_dataset(name = 'elev')
 
-
-#new_tofd_stddev_da.to_dataset(name = 'orogstd_tofd').to_netcdf('sgo_orogstd_tofd_KM078_oroglobo.nc',engine="h5netcdf", encoding={'orogstd_tofd': {'dtype': 'float32', "zlib": True, "complevel": 5}})
 sgo_ds.to_netcdf('oroglobo_rsync/'+'sgo_'+gridname+'_oroglobo.nc',engine="h5netcdf")
 elev_ds.to_netcdf('oroglobo_rsync/'+'elev_'+gridname+'_oroglobo.nc',engine="h5netcdf")
 

@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov 22 10:19:21 2023
 
-@author: guidodavoli
+@author: Guido Davoli - CNR ISAC
 
-THIS SCRIPT CREATE THE OPERATIONAL GRID:
+This code creates the operational model mean orography:
+
+    1) smoothing the model gridbox-averaged orography
+    2) applying the model land-sea maks 
     
-    1) SMOOTHS THE MODEL GRIDBOX-AVERAGED OROGRAPHY
-    2) APPLIES THE MODEL LAND-SEA MASK (ASSUMED LON ORDER 0-360)
+    (assuming longitudes ordered 0-360)
 
 """
 
@@ -42,6 +43,7 @@ d=int(cfg['filtering_Ndx_ecmwf']["d"])
 Ndx=int(cfg['filtering_Ndx_ecmwf']["Ndx"])
 
 img_dpi=int(cfg['plotting']['dpi'])
+make_plot=bool(cfg['plotting']['make_plot'])
 
 
 
@@ -94,17 +96,14 @@ data_model_mask_lake = xr.open_dataset(path_data_in_mask+netcdf_model_mask_lake_
 lake_mask = data_model_mask_lake["flake"].values[:,:-2]
 
 # Apply the mask
-# THIS IS WRONG, PERCHÈ I LAGHI SONO =0 COME MASK MA IN REALTÀ NON SONO A ZERO COME ALTITUDINE
-# CORRECTION:
-#operational_orog_on_model_grid=np.where(land_sea_mask==1, operational_orog_on_model_grid, 0)
+
 operational_orog_on_model_grid=np.where((land_sea_mask==1) | (lake_mask>0), operational_orog_on_model_grid, 0)
-#operational_orog_on_model_grid=np.where((land_sea_mask==1) | ( (land_sea_mask<1) & (operational_orog_on_model_grid>1) ), operational_orog_on_model_grid, 0)
 operational_orog_on_model_grid=np.where((land_sea_mask==0) & (lake_mask==0), 0, operational_orog_on_model_grid)
-#operational_orog_on_model_grid=np.where((land_sea_mask==0) & (operational_orog_on_model_grid <100), 0, operational_orog_on_model_grid)
 
 
 ### PLOT
-oroplot.orography_plot(operational_orog_on_model_grid,path_img_out+img_model_grid_operational_orog_out,img_dpi)
+if make_plot:
+    oroplot.orography_plot(operational_orog_on_model_grid,path_img_out+img_model_grid_operational_orog_out,img_dpi)
 
 
 ### create data array and save to netcdf
