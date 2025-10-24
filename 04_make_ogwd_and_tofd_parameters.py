@@ -57,7 +57,6 @@ TREAT THE GLOBE AS A 2D GRID, ANCHE A SX DI -180 E A DX DI +180
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
 import xarray as xr
-import oroglobo_parameters as oropar
 import oroglobo_functions as orofunc
 from shapely.geometry import Polygon
 import LatLon23
@@ -114,6 +113,41 @@ def calc_sgo_parameters(latindex):
         # perform a mean to get the value on the pole point (i select all longitudes at the lat of the pole)
         operational_mean_orog_in_model_grid_box=np.mean(np.float32(operational_orog_on_model_grid_da.sel(latitude=lat_model[latindex],method="nearest").elev.data))
     
+        all_tif_data_ds=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary,eastboundary)).rename({'longitude': 'x','latitude': 'y'})
+    
+        #######################################################################################################
+        ### calculate the ogwd and tofd parameters from the selected data points inside the model grid cell ###
+        #######################################################################################################
+                        
+        ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
+        ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
+        tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
+        =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid_box_polygon,
+                                                             all_tif_data_ds,
+                                                             operational_mean_orog_in_model_grid_box
+                                                             )
+        
+        # the poles are single points in reality, so the value is the same at all longitudes
+        
+        ogwd_F1_on_model_grid[:]  =ogwd_F1
+        ogwd_F2_on_model_grid[:]  =ogwd_F2
+        ogwd_F3_on_model_grid[:]  =ogwd_F3
+        ogwd_hamp_on_model_grid[:]=ogwd_hamp
+        
+        ogwd_stddev_on_model_grid[:]     =ogwd_stddev
+        ogwd_anisotropy_on_model_grid[:] =ogwd_anisotropy
+        ogwd_orientation_on_model_grid[:]=ogwd_orientation
+        ogwd_slope_on_model_grid[:]      =ogwd_slope
+        
+        tofd_stddev_on_model_grid[:]     =tofd_stddev
+        tofd_anisotropy_on_model_grid[:] =tofd_anisotropy
+        tofd_orientation_on_model_grid[:]=tofd_orientation
+        tofd_slope_on_model_grid[:]      =tofd_slope
+        
+        ###########################
+        ### end of calculations ###
+        ###########################
+    
     #print(f'Time: {time.time() - start}')
     
     # NORTH POLE POINT    
@@ -143,6 +177,41 @@ def calc_sgo_parameters(latindex):
         # perform a mean to get the value on the pole point (i select all longitudes at the lat of the pole)
         operational_mean_orog_in_model_grid_box=np.mean(np.float32(operational_orog_on_model_grid_da.sel(latitude=lat_model[latindex],method="nearest").elev.data))
 
+        all_tif_data_ds=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary,eastboundary)).rename({'longitude': 'x','latitude': 'y'})
+        
+        #######################################################################################################
+        ### calculate the ogwd and tofd parameters from the selected data points inside the model grid cell ###
+        #######################################################################################################
+                        
+        ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
+        ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
+        tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
+        =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid_box_polygon,
+                                                             all_tif_data_ds,
+                                                             operational_mean_orog_in_model_grid_box
+                                                             )
+        
+        # the poles are single points in reality, so the value is the same at all longitudes
+        
+        ogwd_F1_on_model_grid[:]  =ogwd_F1
+        ogwd_F2_on_model_grid[:]  =ogwd_F2
+        ogwd_F3_on_model_grid[:]  =ogwd_F3
+        ogwd_hamp_on_model_grid[:]=ogwd_hamp
+        
+        ogwd_stddev_on_model_grid[:]     =ogwd_stddev
+        ogwd_anisotropy_on_model_grid[:] =ogwd_anisotropy
+        ogwd_orientation_on_model_grid[:]=ogwd_orientation
+        ogwd_slope_on_model_grid[:]      =ogwd_slope
+        
+        tofd_stddev_on_model_grid[:]     =tofd_stddev
+        tofd_anisotropy_on_model_grid[:] =tofd_anisotropy
+        tofd_orientation_on_model_grid[:]=tofd_orientation
+        tofd_slope_on_model_grid[:]      =tofd_slope
+        
+        ###########################
+        ### end of calculations ###
+        ###########################
+        
     #print(f'Time: {time.time() - start}')
     
     # THESE ARE "NORMAL" LAT-LON POINTS (NOT ON THE POLE).
@@ -190,7 +259,9 @@ def calc_sgo_parameters(latindex):
                     # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                     # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
                     operational_mean_orog_in_model_grid_box=np.float32(operational_orog_on_model_grid_da.sel(latitude=lat_model[latindex],longitude=LatLon23.Longitude(lon_model[lonindex]).range360(),method="nearest").elev.data)
-                           
+                     
+                    all_tif_data_ds=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary,eastboundary)).rename({'longitude': 'x','latitude': 'y'})
+                    
                 else:
                     
                     # the grid cell west border goes in the eastern hemisphere     
@@ -227,6 +298,11 @@ def calc_sgo_parameters(latindex):
                     # now there is the need to define "model_grid_box_polygon" 
                     # for the next computations; is a merge of the previous two polygons
                     
+                    all_tif_data_ds1=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary_1,eastboundary_1)).rename({'longitude': 'x','latitude': 'y'})
+                    all_tif_data_ds2=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary_2,eastboundary_2)).rename({'longitude': 'x','latitude': 'y'})
+                    all_tif_data_ds=xr.merge([all_tif_data_ds1,all_tif_data_ds2])
+        
+
             #print(f'Time: {time.time() - start}')
             
             # LAST LONGITUDE POINT (IN A "-180/180" GRID)
@@ -260,6 +336,8 @@ def calc_sgo_parameters(latindex):
                     # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                     # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
                     operational_mean_orog_in_model_grid_box=np.float32(operational_orog_on_model_grid_da.sel(latitude=lat_model[latindex],longitude=LatLon23.Longitude(lon_model[lonindex]).range360(),method="nearest").elev.data)
+                    
+                    all_tif_data_ds=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary,eastboundary)).rename({'longitude': 'x','latitude': 'y'})
                     
                 else:
                     
@@ -295,6 +373,11 @@ def calc_sgo_parameters(latindex):
                     # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
                     operational_mean_orog_in_model_grid_box=np.float32(operational_orog_on_model_grid_da.sel(latitude=lat_model[latindex],longitude=LatLon23.Longitude(lon_model[lonindex]).range360(),method="nearest").elev.data)
             
+                    all_tif_data_ds1=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary_1,eastboundary_1)).rename({'longitude': 'x','latitude': 'y'})
+                    all_tif_data_ds2=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary_2,eastboundary_2)).rename({'longitude': 'x','latitude': 'y'})
+                    all_tif_data_ds=xr.merge([all_tif_data_ds1,all_tif_data_ds2])
+                    
+            
             #print(f'Time: {time.time() - start}')
             
             # "CENTRAL" (NOT FIRST, NOT LAST) LONGITUDE POINT (IN A "-180/+180" GRID) ("EASY" POINTS)
@@ -327,82 +410,39 @@ def calc_sgo_parameters(latindex):
             
                 #print(f'Time: {time.time() - start} | 2')
                 
-                #######################################################################################################
-                ### calculate the ogwd and tofd parameters from the selected data points inside the model grid cell ###
-                #######################################################################################################
-
-                """
-                all_tif_data_ds,data_exist=orofunc.get_copernicus90m_data_xrds_from_tiles_list(tif_filenames_list)
-                
-                intersection_area_fraction=0
-                
-                if data_exist:
-                    
-                    returned_WB=all_tif_data_ds.x.data[0]
-                    returned_EB=all_tif_data_ds.x.data[-1]
-                    returned_SB=all_tif_data_ds.y.data[-1]
-                    returned_NB=all_tif_data_ds.y.data[0]
-                    
-                    returned_tif_data_polygon=Polygon([(returned_WB,returned_SB), 
-                                                       (returned_EB,returned_SB), 
-                                                       (returned_EB,returned_NB), 
-                                                       (returned_WB,returned_NB)])
-                    
-                    intersection_area_fraction=model_grid_box_polygon.intersection(returned_tif_data_polygon).area / model_grid_box_polygon.area
-                    
-                if ( data_exist and intersection_area_fraction>0.05):
-                
-                    ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
-                    ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
-                    tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
-                    =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
-                                                                         all_tif_data_ds,
-                                                                         operational_mean_orog_in_model_grid_box
-                                                                         )
-                else:
-                    
-                    ogwd_F1 = np.nan # if there are no data on disk or intersection between returned data and gridbox is too small --> the grid box is entirely on ocean
-                    ogwd_F2 = np.nan
-                    ogwd_F3 = np.nan
-                    ogwd_hamp = np.nan
-                    ogwd_stddev = np.nan
-                    ogwd_anisotropy = np.nan
-                    ogwd_orientation = np.nan
-                    ogwd_slope = np.nan
-                    tofd_stddev = np.nan
-                    tofd_anisotropy = np.nan
-                    tofd_orientation = np.nan
-                    tofd_slope = np.nan
-                """
-                
                 all_tif_data_ds=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary,eastboundary)).rename({'longitude': 'x','latitude': 'y'})
                 
-                ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
-                ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
-                tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
-                =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(model_grid_box_polygon,
-                                                                     all_tif_data_ds,
-                                                                     operational_mean_orog_in_model_grid_box
-                                                                     )
                 
-                ogwd_F1_on_model_grid[lonindex]  =ogwd_F1
-                ogwd_F2_on_model_grid[lonindex]  =ogwd_F2
-                ogwd_F3_on_model_grid[lonindex]  =ogwd_F3
-                ogwd_hamp_on_model_grid[lonindex]=ogwd_hamp
-                
-                ogwd_stddev_on_model_grid[lonindex]     =ogwd_stddev
-                ogwd_anisotropy_on_model_grid[lonindex] =ogwd_anisotropy
-                ogwd_orientation_on_model_grid[lonindex]=ogwd_orientation
-                ogwd_slope_on_model_grid[lonindex]      =ogwd_slope
-                
-                tofd_stddev_on_model_grid[lonindex]     =tofd_stddev
-                tofd_anisotropy_on_model_grid[lonindex] =tofd_anisotropy
-                tofd_orientation_on_model_grid[lonindex]=tofd_orientation
-                tofd_slope_on_model_grid[lonindex]      =tofd_slope
-                
-                ###########################
-                ### end of calculations ###
-                ###########################
+            #######################################################################################################
+            ### calculate the ogwd and tofd parameters from the selected data points inside the model grid cell ###
+            #######################################################################################################
+                            
+            ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp,\
+            ogwd_stddev,ogwd_anisotropy,ogwd_orientation,ogwd_slope,\
+            tofd_stddev,tofd_anisotropy,tofd_orientation,tofd_slope\
+            =orofunc.calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid_box_polygon,
+                                                                 all_tif_data_ds,
+                                                                 operational_mean_orog_in_model_grid_box
+                                                                 )
+            
+            ogwd_F1_on_model_grid[lonindex]  =ogwd_F1
+            ogwd_F2_on_model_grid[lonindex]  =ogwd_F2
+            ogwd_F3_on_model_grid[lonindex]  =ogwd_F3
+            ogwd_hamp_on_model_grid[lonindex]=ogwd_hamp
+            
+            ogwd_stddev_on_model_grid[lonindex]     =ogwd_stddev
+            ogwd_anisotropy_on_model_grid[lonindex] =ogwd_anisotropy
+            ogwd_orientation_on_model_grid[lonindex]=ogwd_orientation
+            ogwd_slope_on_model_grid[lonindex]      =ogwd_slope
+            
+            tofd_stddev_on_model_grid[lonindex]     =tofd_stddev
+            tofd_anisotropy_on_model_grid[lonindex] =tofd_anisotropy
+            tofd_orientation_on_model_grid[lonindex]=tofd_orientation
+            tofd_slope_on_model_grid[lonindex]      =tofd_slope
+            
+            ###########################
+            ### end of calculations ###
+            ###########################
     
                 #print(f'Time: {time.time() - start} | 4')
     
@@ -432,6 +472,10 @@ netcdf_model_grid_ogwd_params_out=cfg['files_out']["netcdf_model_grid_ogwd_param
 netcdf_model_grid_tofd_params_out=cfg['files_out']["netcdf_model_grid_tofd_params"].replace("*GRIDNAME*", gridname) 
 netcdf_model_grid_operational_orog_in=cfg['files_out']["netcdf_model_grid_operational_orog"].replace("*GRIDNAME*", gridname) 
 netcdf_copernicus_lowres_global=cfg['files_in']["netcdf_copernicus_lowres_global"]
+
+Nparal=int(cfg['parallel_execution']['Nparal'])
+
+
 
 # Open operational orography on model grid and load coordinates
 operational_orog_on_model_grid_da = xr.open_dataset(path_data_operational_orog_on_model_grid_in+netcdf_model_grid_operational_orog_in)
@@ -487,7 +531,7 @@ start = time.time()
     
 from multiprocessing import Pool
 
-pool = Pool(processes=4)
+pool = Pool(processes=Nparal)
 ####### HERE COMES THE CHANGE #######
 results = [pool.apply_async(calc_sgo_parameters, [val]) for val in range(nlat_model)]
 #results = [pool.apply_async(calc_sgo_parameters, [val]) for val in range(12)]
