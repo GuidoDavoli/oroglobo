@@ -13,7 +13,6 @@ This code:
 
 import numpy as np
 import xarray as xr
-import oroglobo_parameters as oropar
 import yaml
 
 

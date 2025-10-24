@@ -72,6 +72,7 @@ parallel_execution:
 
 plotting:
   dpi: 600 
+  make_plot: False
 
 #USER MANUAL
 
