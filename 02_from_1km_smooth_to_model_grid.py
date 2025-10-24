@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 20 12:50:31 2023
 
-@author: guidodavoli
+@author: Guido Davoli - CNR ISAC
 
-take the 1km reoslution orography smoothed to target model grid scale
-and aggregate to target model grid boxes (simple mean)
+This code:
+
+    - takes the 1km reoslution orography smoothed to target model grid scale
+    and aggregate to target model grid boxes (simple mean)
 
 
 """
@@ -43,7 +44,7 @@ def wrap360(ds, lon='lon'):
     return ds.reindex({ lon : np.sort(ds[lon])})
 
 
-# IMPORT PARAMETERS
+############# IMPORT PARAMETERS
 configname='oroglobo_parameters.yaml'
 with open(configname, 'r', encoding='utf-8') as file:
     cfg = yaml.load(file, Loader=yaml.FullLoader)
@@ -63,6 +64,7 @@ netcdf_1km_smooth_orog_in=cfg['files_work']["netcdf_1km_smooth_orog"].replace("*
 img_model_grid_orog_out=cfg['files_out']["img_model_grid_orog"].replace("*GRIDNAME*", gridname) 
 
 img_dpi=int(cfg['plotting']['dpi'])
+make_plot=bool(cfg['plotting']['make_plot'])
 
 
 # Open the file(s) with model gridpoints
@@ -245,5 +247,6 @@ mean_orog_on_model_grid_da=xr.DataArray(mean_orog_on_model_grid, coords=[('latit
 mean_orog_on_model_grid_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_model_grid_orog_out)
 
 ## plotting
-oroplot.orography_plot(mean_orog_on_model_grid,path_img_out+img_model_grid_orog_out,img_dpi)
+if make_plot:
+    oroplot.orography_plot(mean_orog_on_model_grid,path_img_out+img_model_grid_orog_out,img_dpi)
 
