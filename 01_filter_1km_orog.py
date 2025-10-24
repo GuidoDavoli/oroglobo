@@ -195,7 +195,7 @@ orogsmooth_da=orogsmooth_da.isel(latitude=slice(None, None, -1))
 # save as netcdf
 print('save to netcdf...')
 
-orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out,engine="h5netcdf", encoding={'elev': {'dtype': 'float32', "zlib": True, "complevel": 5}})
+orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out,engine="h5netcdf", encoding={'elev': {'dtype': 'float16', "zlib": True, "complevel": 5}})
 
 print('... done!')
 
