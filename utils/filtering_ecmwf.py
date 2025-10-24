@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb 21 09:32:45 2024
 
-@author: guidodavoli
+@author: Guido Davoli - CNR ISAC
 
-ROUTINES FOR FILTERING WITH ECMWF METHOD IN OROGLOBO
+this file contains routines for filtering orography 
+following ECMWF methodology
 
 """
 
@@ -74,8 +74,8 @@ def filter_ECMWF_2D(d,D):
             dist=distance(i0_filt+i, j0_filt+j)
             filt[i,j]=smoother_ECMWF(dist, d, D)
             
-    filt=filt/np.sum(filt)  #### tentativo di conservare il "modulo" dell'orografia
-                            #### ispirato da https://medium.com/@bdhuma/6-basic-things-to-know-about-convolution-daef5e1bc411
+    filt=filt/np.sum(filt)  #### normalization after filtering
+                            #### see https://medium.com/@bdhuma/6-basic-things-to-know-about-convolution-daef5e1bc411
                             #### the idea is to put a normalization factor in front of the filter matrix
     
     return filt
@@ -110,8 +110,8 @@ def filter_ECMWF_1D(d,D):
         dist=i0_filt+i
         filt[i]=smoother_ECMWF(dist, d, D)
             
-    filt=filt/np.sum(filt)  #### tentativo di conservare il "modulo" dell'orografia
-                            #### ispirato da https://medium.com/@bdhuma/6-basic-things-to-know-about-convolution-daef5e1bc411
+    filt=filt/np.sum(filt)  #### normalization after filtering
+                            #### see https://medium.com/@bdhuma/6-basic-things-to-know-about-convolution-daef5e1bc411
                             #### the idea is to put a normalization factor in front of the filter matrix
     
     return filt

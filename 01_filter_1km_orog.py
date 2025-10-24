@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 13 09:58:16 2023
 
 @author: Guido Davoli - CNR ISAC
 
-THIS SCRIPT FILTERS A 1KM GLOBAL GRID (1KM AT EQUATOR) UNIFORMLY, TO A SCALE
-CORRESPONDING TO THE MAXIMUMX GRID SPACING OF THE TARGET OPERATIONAL
-MODEL GRID.
-THE RESULT IS A 1KM (AT EQUATOR) RESOLUTION MAP, BUT WITH ALL SCALES BELOW
-A GIVEN VALUE FILTERED OUT.
-
+This code:
+    
+    - filters the Copernicus (approx.) 1km global orography dataset
+    to a scale corresponding to the maximum grid spacing S of the 
+    target operational model grid. The result is a (approx.) 1km
+    resolution map, but with all scales below S filtered out.
+    Creating this field allows to filter uniformly over the globe 
+    the orography to a resolution consistent with the maximum 
+    grid spacing S of the model target grid; in this way, 
+    in the next step we will obtain a mean orography which represents
+    the same scales over the globe even if the lat-lon grid spacing
+    is not uniform
 
 """
 
@@ -27,6 +32,7 @@ import yaml
 
 
 ######################## IMPORT PARAMETERS ##########################
+
 configname='oroglobo_parameters.yaml'
 with open(configname, 'r', encoding='utf-8') as file:
     cfg = yaml.load(file, Loader=yaml.FullLoader)
@@ -51,6 +57,7 @@ CN_minmax=int(cfg['filtering_1km_ecmwf']['CN_minmax'])
 
 Nparal=int(cfg['parallel_execution']['Nparal'])
 img_dpi=int(cfg['plotting']['dpi'])
+make_plot=bool(cfg['plotting']['make_plot'])
 
 
 #####################################################################
@@ -66,10 +73,10 @@ nlon=len(lon)
 
 #### DATA_OROG.ELEV: FIRST DIMENSION (AXIS 0): LAT; SECOND DIMENSION (AXIS 1): LON. 
 
-
 # plot
-oroplot.orography_plot(data_orog.elev,path_img_out+img_1km_global_raw_out,img_dpi)
-print("oroginal plot: done!")
+if make_plot:
+    oroplot.orography_plot(data_orog.elev,path_img_out+img_1km_global_raw_out,img_dpi)
+    print("oroginal plot: done!")
 
 #####################################################################
 ########################## FILTERING ################################
@@ -106,8 +113,8 @@ for i in range(len(lat)):
     km_in_each_pixel_zonal=haversine((lat[i],lon[0]),(lat[i],lon[1]),unit='km') # this is the distance, in km, of two consecutive longitudes, at each latitude
     filtering_scale_pixel_zonal=int(filt_scale_km/km_in_each_pixel_zonal) # the filtering scale in the zonal direction, in pixels
     
-    #### DEFINE A MAXIMUM FILTERNG SCALE IN ZONAL DIRECTION (OTHWERWISE AT POLES I WOULD HAVE UNFEASIBLE SCALES, TOO BIG) 
-    #### Cfilt_max_zonal is an external TUNING PARAMETER
+    #### DEFINE A MAXIMUM FILTERNG SCALE IN ZONAL DIRECTION (avoid problems at poles) 
+    #### Cfilt_max_zonal is an external parameter
     if filtering_scale_pixel_zonal>int(len(lon)/Cfilt_max_zonal):
         D_zonal_pixel[i]=int(len(lon)/Cfilt_max_zonal)
     else:
@@ -123,7 +130,7 @@ print("time: {}".format(end-start)," s\n")
 
 print('meridional filtering...')
 
-orogsmooth0=np.zeros((nlat,nlon))
+orogsmooth0=np.zeros((nlat,nlon)).astype('int16')
 
 def funz1(j):
     
@@ -133,12 +140,15 @@ def funz1(j):
     #print(lon[j])
     return orogsmooth0_j
 
+
 pool = Pool(processes=Nparal)
+
 ####### PARALLEL COMPUTATION #######
 results = [pool.apply_async(funz1, [val]) for val in range(nlon)]
 for idx, val in enumerate(results):
     orogsmooth0[:,idx]= val.get()
 #######
+
 pool.close()
 
 print('... done!')
@@ -149,7 +159,7 @@ print("time: {}".format(end-start)," s\n")
 #### FILTER THE PREVIOUS FIELD ALONG AXIS 1 (at each LAT, filter along ZONAL DIRECTION)
 print('zonal filtering...')
 
-orogsmooth=np.zeros((nlat,nlon))
+orogsmooth=np.zeros((nlat,nlon)).astype('int16')
 
 for i in range(nlat):
     
@@ -168,7 +178,7 @@ del orogsmooth0 # not needed anymore, free some memory
 # define neighborhood lenghtscale for each lat/lon
 # DEFINED AS A FRACTION OF THE FILTERING SCALE D
 
-# CN_minmax is an external TUNING PARAMETER
+# CN_minmax is an external parameter
 
 print('local minmax constrain...')
 
@@ -184,8 +194,9 @@ print("time: {}".format(end-start)," s\n")
 ######################################################################
 ############## PLOT SMOOTH 1KM OROG AND SAVE TO NETCDF ###############
 
-oroplot.orography_plot(orogsmooth,path_img_out+img_1km_global_smooth_out,img_dpi)
-print('smooth plot: done!')
+if make_plot:
+    oroplot.orography_plot(orogsmooth,path_img_out+img_1km_global_smooth_out,img_dpi)
+    print('smooth plot: done!')
 
 orogsmooth_da=xr.DataArray(orogsmooth, coords=[('latitude', lat),('longitude', lon)])
 
@@ -195,7 +206,7 @@ orogsmooth_da=orogsmooth_da.isel(latitude=slice(None, None, -1))
 # save as netcdf
 print('save to netcdf...')
 
-orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out,engine="h5netcdf", encoding={'elev': {'dtype': 'float32', "zlib": True, "complevel": 5}})
+orogsmooth_da.to_dataset(name = 'elev').to_netcdf(path_data_out+netcdf_1km_smooth_orog_out,engine="h5netcdf", encoding={'elev': {'dtype': 'int16', "zlib": True, "complevel": 5}})
 
 print('... done!')
 

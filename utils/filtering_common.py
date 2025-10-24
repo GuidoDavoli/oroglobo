@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb 21 09:32:57 2024
 
-@author: guidodavoli
+@author: Guido Davoli - CNR ISAC
 
-COMMON ROUTINES FOR FILTERING IN OROGLOBO
+this file contains common routines for filtering orography 
+
+References:
+    
+    Zadra 2018: https://collaboration.cmc.ec.gc.ca/science/rpn/drag_project/documents/topo_lowpass_filter.pdf
 
 """
 
@@ -78,7 +81,7 @@ def localminimum_2D_axis1(data2D,Naxis1,how,Nparal=1):
         return data2D_localmin_axis1_i
     
     pool = Pool(processes=Nparal)
-    ####### HERE COMES THE CHANGE #######
+    ####### PARALLEL COMPUTATION #######
     results = [pool.apply_async(funzA, [val]) for val in range(naxis0)]
     for idx, val in enumerate(results):
         data2D_localmin_axis1[idx,:]= val.get()
@@ -106,7 +109,7 @@ def localmaximum_2D_axis1(data2D,Naxis1,how,Nparal=1):
         return data2D_localmax_axis1_i
     
     pool = Pool(processes=Nparal)
-    ####### HERE COMES THE CHANGE #######
+    ####### PARALLEL COMPUTATION #######
     results = [pool.apply_async(funzB, [val]) for val in range(naxis0)]
     for idx, val in enumerate(results):
         data2D_localmax_axis1[idx,:]= val.get()
@@ -134,7 +137,7 @@ def localminimum_2D_axis0(data2D,Naxis0,how,Nparal=1):
         return data2D_localmin_axis0_j
     
     pool = Pool(processes=Nparal)
-    ####### HERE COMES THE CHANGE #######
+    ####### PARALLEL COMPUTATION #######
     results = [pool.apply_async(funzC, [val]) for val in range(naxis1)]
     for idx, val in enumerate(results):
         data2D_localmin_axis0[:,idx]= val.get()
@@ -162,7 +165,7 @@ def localmaximum_2D_axis0(data2D,Naxis0,how,Nparal=1):
         return data2D_localmax_axis0_j
     
     pool = Pool(processes=Nparal)
-    ####### HERE COMES THE CHANGE #######
+    ####### PARALLEL COMPUTATION #######
     results = [pool.apply_async(funzD, [val]) for val in range(naxis1)]
     for idx, val in enumerate(results):
         data2D_localmax_axis0[:,idx]= val.get()
