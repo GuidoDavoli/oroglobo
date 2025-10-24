@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 20 12:21:48 2023
 
-@author: guidodavoli
+@author: Guido Davoli - CNR ISAC
+
+This code:
+    
+    - initialize the folders structure to correctly run OroGlobo
+
 """
+
+####### IMPORT LIBRARIES
 
 import os
 import yaml
+
+####### IMPORT PARAMETERS
 
 configname='oroglobo_parameters.yaml'
 with open(configname, 'r', encoding='utf-8') as file:
