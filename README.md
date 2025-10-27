@@ -52,17 +52,36 @@ The execution of the code is divided in 5 steps, correspongind to different scri
 - *05_create_model_files.pt*: performs the last operations needed to store OroGlobo output in netcdf files with a structure fully compatible with the GloboNe model.
 
 The file *oroglobo_parameters.yaml* must be used to configure the behaviour of OroGlobo and to set the proper paths on the user system.
-The path to the 1km orographic dataset must be set through the *paths_in --> copernicus_lowresnc_global* parameter
+The path to the 1km orographic dataset must be set through the *paths_in --> copernicus_lowresnc_global* parameter.
 
-## References
+### Relevant publications
 
+Davoli, G. and Alessandri, A.: A new software tool for the generation of orographic fields for atmospheric models, EMS Annual Meeting 2025, Ljubljana, Slovenia, 7–12 Sep 2025, EMS2025-554, https://doi.org/10.5194/ems2025-554, 2025. The poster is available [here](./docs/OroGLOBO_poster_EMS25.pdf).
+
+#### References
+
+Beljaars, Anton & Brown, Andrew & Wood, Nigel. (2004). A new parametrization of turbulent orographic form drag. Quarterly Journal of the Royal Meteorological Society. 130. 1327 - 1347. https://doi.org/10.1256/qj.03.73
+
+Elvidge, A. D., I. Sandu, N. Wedi, S. B. Vosper, A. Zadra, S. Boussetta, F. Bouyssel, A. van Niekerk, M. A. Tolstykh, and M. Ujiie (2019), Uncertainty in the Representation of Orography in Weather and Climate Models and Implications for Parameterized Drag, J. Adv. Model. Earth Syst., 11, 2567–2585. doi:https://doi.org/10.1029/2019MS001661. 
+
+Lott, F. and Miller, M.J. (1997), A new subgrid-scale orographic drag parametrization: Its formulation and testing. Q.J.R. Meteorol. Soc., 123: 101-127. https://doi.org/10.1002/qj.49712353704
+
+Kanehama, T., Sandu, I., Beljaars, A., van Niekerk, A., Lott, F. (2019). Which orographic scales matter most for medium-range forecast skill in the Northern Hemisphere winter?. Journal of Advances in Modeling Earth Systems. 11, 3893–3910. https://doi.org/10.1029/2019MS001894 
+
+Pithan, F., T. G. Shepherd, G. Zappa, and I. Sandu (2016), Climate model biases in jet streams, blocking and storm tracks resulting from missing orographic drag, Geophys. Res. Lett., 43, 7231–7240, doi:10.1002/2016GL069551. 
+
+Sandu, I., van Niekerk, A., Shepherd, T.G. et al. (2019) Impacts of orography on large-scale atmospheric circulation. npj Clim Atmos Sci 2, 10. https://doi.org/10.1038/s41612-019-0065-9
+
+van Niekerk, A. & Vosper, S. (2021) Towards a more “scale-aware” orographic gravity wave drag parametrization: Description and initial testing. Quarterly Journal of the Royal Meteorological Society, 1–20. Available from: https://doi.org/10.1002/qj.4126
+
+Xue, H. & Shen, X.(2023) A turbulent orographic form drag scheme accounting for anisotropy and orientation for kilometer- to subkilometer-scale models. Quarterly Journal of the Royal Meteorological Society, 149(755), 2527–2549. Available from: https://doi.org/10.1002/qj.4519
 
 
 ## License
 
 Copyright 2025 Guido Davoli
 
-OroGlobo is free software made available under the MIT License. For details see the LICENSE file.
+OroGlobo is free software made available under the MIT License. For details see the [LICENSE](./LICENSE.md) file.
 
 
 ### Fincancial Support
