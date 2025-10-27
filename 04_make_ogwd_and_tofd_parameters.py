@@ -1,75 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 23 15:12:51 2023
 
-@author: guidodavoli
+@author: Guido Davoli - CNR ISAC
 
-
-1) LOAD MODEL GRID; CYCLE OVER MODEL GRIDBOXES:
-2) IDENTIFY WHICH COPERNICUS DEM TILES ARE INSIDE/INTERSECTED BY 
-    THE CONSIDERED MODEL GRID
-3) SELECT FROM THE SELECTED TILES ONLY THE POINTS REALLY INSIDE THE MODEL GRIDBOX
-    3.1) (AT PRESENT NOT DONE) INTERPOLATE THE SELECTED 90M DATA TO A GRID WITH
-    THE SAME RESOLUTION SPANNING THE MODEL GRIDBOX EDGES (don't know if it is really useful)
-4) SAMPLING THE MODEL GRIDBOX-MEAN OROGRAPHY ON THE 90M GRID (THE SAME VALUE)
-5) TAKE THE DIFFERENCE BETWEEN THE SELECTED 90M DATA AND THE GRIDBOX MEAN 
-    OROGRAPHY TO OBTAIN THE SUBGRID SCALE OROGRAPHY
-6) DEPENDING ON THE SCHEME (VAN NIEKERK, FLOW BLOCK, ECC): FILTER OUT SCALES
-    BELOW 5 KM (OPTIMIZE: SELECT A FRAME OF 90M DATA AROUND THE MODEL GRIDBOX TO
-    AVOID SPECTRAL ALIASING)
-7) COMPUTE THE VAN NIEKERK Fn PARAMETERS AND THE FOUR LOTT&MILLER OROG PARAMS
-
-
-#### COPERNICUS90m data structure
-
-divided in four regions: NE, NW, SE, SW
-
-tiles names are the coordinates of the "lower-left" corner
-
-1 tile is 1deg x 1deg
-
-NE: tiles start from N00 .... E000; tiles ends at N89 ... E179
-NW: tiles start from N00 .... W001; tiles ends at N89 ... W180
-SE: tiles start from S01 .... E000; tiles ends at S90 ... E179
-SW: tiles start from S01 .... W001; tiles ends at S90 ... W180
-
-EXAMPLES: 
+This code:
     
-x=LatLon23.string2latlon('45 S','25 W','d% %H')
-x.lon.range360()
-
-y=LatLon23.LatLon(lat=-30,lon=-20)
-y.to_string('d% %H')
-
-p1 = Polygon([(0,0), (1,1), (1,0)])
-p2 = Polygon([(0,1), (1,0), (1,1)])
-print(p1.intersects(p2))
-
-THE DEM TILES CORRESPONDS TO A 1X1 DEG GRID
---> CHECK INTERSECTIONS WITH THESE SQUARES (0..360 FORMAT?) 
-AND THEN CONVERT TO HEMISPHERE FORMAT AND OPEN FILE
-
-TREAT THE GLOBE AS A 2D GRID, ANCHE A SX DI -180 E A DX DI +180
-
+    - load model grid and cycle over model gridboxes;
+    - for each gridbox:
+        * loads the corresponding operational model mean orography and 
+        the 1km Copernicus orography 
+        * takes the difference between the two to obtain unresoved orography 
+        * performs the needed filtering (selecting above/below 5 km)
+        * calculates the orographic parameters needed by parameterizations
+    - saves the results in netcdf files.
+    
 """
 
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
 import xarray as xr
 import oroglobo_functions as orofunc
-from shapely.geometry import Polygon
 import LatLon23
 import yaml
 
 
 def calc_sgo_parameters(latindex):
     
-    # lat_model: list of model grid latitudes
     # latindex: index of the latitude dimension
-    
-    #print(f'Time: {time.time() - start}')
-    
+        
     # initialize single lat arrays of ogwd parameters
     ogwd_F1_on_model_grid=np.zeros(len(lon_model))
     ogwd_F2_on_model_grid=np.zeros(len(lon_model))
@@ -96,18 +55,10 @@ def calc_sgo_parameters(latindex):
         northboundary=-90+dr # lat boundary of the polar cap
         
         # collect all the points from copernicus tiles falling in the polar cap
-        # usign shapely
                 
         southboundary=-90
         westboundary=-180
         eastboundary=180
-        
-        # once the boundaries of the model grid cell has been determined,
-        # determine which dem tiles to open.
-        # the DEM tiles are on a 1x1 deg regular grid
-        model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-        tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
-        print(tif_filenames_list,"SONO IO 1")
         
         # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
         # perform a mean to get the value on the pole point (i select all longitudes at the lat of the pole)
@@ -148,7 +99,6 @@ def calc_sgo_parameters(latindex):
         ### end of calculations ###
         ###########################
     
-    #print(f'Time: {time.time() - start}')
     
     # NORTH POLE POINT    
     if lat_model[latindex]==90:
@@ -160,18 +110,10 @@ def calc_sgo_parameters(latindex):
         southboundary=90-dr # lat boundary of the polar cap
         
         # collect all the points from copernicus tiles falling in the polar cap
-        # usign shapely
                     
         northboundary=90
         westboundary=-180
         eastboundary=180
-        
-        # once the boundaries of the model grid cell has been determined,
-        # determine which dem tiles to open.
-        # the DEM tiles are on a 1x1 deg regular grid
-        model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-        tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
-        print(tif_filenames_list,"SONO IO 2")
         
         # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
         # perform a mean to get the value on the pole point (i select all longitudes at the lat of the pole)
@@ -212,7 +154,6 @@ def calc_sgo_parameters(latindex):
         ### end of calculations ###
         ###########################
         
-    #print(f'Time: {time.time() - start}')
     
     # THESE ARE "NORMAL" LAT-LON POINTS (NOT ON THE POLE).
     if lat_model[latindex]>-90 and lat_model[latindex]<90:
@@ -221,13 +162,9 @@ def calc_sgo_parameters(latindex):
         
         for lonindex in range(nlon_model):
             
-            #print("Latitude: ",lat_model[latindex]," Longitude: ",lon_model[lonindex])
-            
             dlat_north=abs(lat_model[latindex]-lat_model[latindex+1])/2
             dlat_south=abs(lat_model[latindex]-lat_model[latindex-1])/2
-            
-            #print(f'Time: {time.time() - start}')
-            
+                        
             # FIRST LONGITUDE POINT (IN A "-180/180" GRID)
             if lonindex==0:
                 
@@ -247,14 +184,6 @@ def calc_sgo_parameters(latindex):
                     
                     # the grid cell west border is at lon >=-180
                     westboundary =lon_model[lonindex]-dlon_west
-                    #print("first cell west boundary: ",westboundary)
-                    
-                    # once the boundaries of the model grid cell has been determined,
-                    # determine which dem tiles to open.
-                    # the DEM tiles are on a 1x1 deg regular grid 
-                    model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-                    tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
-                    print(tif_filenames_list,"SONO IO 3")
                     
                     # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                     # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
@@ -268,28 +197,17 @@ def calc_sgo_parameters(latindex):
                     # TO DEAL WITH THIS PROBLEM, WE HAVE TO SPLIT THE MODEL GRID CELL
                     # IN TWO POLYGONS AND CHECK THE INTERSECTIONS TWO TIMES
                     
-                    westboundary=180+(lon_model[lonindex]-dlon_west+180) # the parenthesis is a negative number
-                    #print("first cell west boundary: ",westboundary)  
-                    
+                    westboundary=180+(lon_model[lonindex]-dlon_west+180) # the parenthesis is a negative number                    
                     
                     #SPLIT THE PROBLEM IN TWO PLYGONS
                     
                     # the first poligon goes from eastboundary to -180
-                
                     westboundary_1=-180
                     eastboundary_1=eastboundary
-                    model_grid_box_polygon_1=Polygon([(westboundary_1,southboundary), (eastboundary_1,southboundary), (eastboundary_1,northboundary), (westboundary_1,northboundary)])
-                    tif_filenames_list_1=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_1)
-                    
-                    # the second poligon goes from the calculated westboundary, which is at 180-something, up to eastboundary=+180
-                
+
+                    # the second poligon goes from the calculated westboundary, which is at 180-something, up to eastboundary=+180            
                     westboundary_2=westboundary
                     eastboundary_2=180
-                    model_grid_box_polygon_2=Polygon([(westboundary_2,southboundary), (eastboundary_2,southboundary), (eastboundary_2,northboundary), (westboundary_2,northboundary)])
-                    tif_filenames_list_2=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_2)
-                    
-                    tif_filenames_list=tif_filenames_list_1+tif_filenames_list_2
-                    print(tif_filenames_list,"SONO IO 4")
                     
                     # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                     # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
@@ -303,7 +221,6 @@ def calc_sgo_parameters(latindex):
                     all_tif_data_ds=xr.merge([all_tif_data_ds1,all_tif_data_ds2])
         
 
-            #print(f'Time: {time.time() - start}')
             
             # LAST LONGITUDE POINT (IN A "-180/180" GRID)
             if lonindex==(nlon_model-1):
@@ -324,14 +241,6 @@ def calc_sgo_parameters(latindex):
                     
                     # the grid cell east border is at lon <=180
                     eastboundary =lon_model[lonindex]+dlon_east
-                    #print("last cell east boundary: ",eastboundary)
-                    
-                    # once the boundaries of the model grid cell has been determined,
-                    # determine which dem tiles to open.
-                    # the DEM tiles are on a 1x1 deg regular grid 
-                    model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-                    tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
-                    print(tif_filenames_list,"SONO IO 5")
                     
                     # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                     # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
@@ -345,9 +254,7 @@ def calc_sgo_parameters(latindex):
                     # TO DEAL WITH THIS PROBLEM, WE HAVE TO SPLIT THE MODEL GRID CELL
                     # IN TWO POLYGONS AND CHECK THE INTERSECTIONS TWO TIMES
                     
-                    eastboundary=(lon_model[lonindex]+dlon_east)-360 
-                    #print("last cell east boundary: ",eastboundary)
-                    
+                    eastboundary=(lon_model[lonindex]+dlon_east)-360                     
                     
                     #SPLIT THE PROBLEM IN TWO PLYGONS
                     
@@ -355,19 +262,11 @@ def calc_sgo_parameters(latindex):
                     
                     westboundary_1=westboundary
                     eastboundary_1=180
-                    model_grid_box_polygon_1=Polygon([(westboundary_1,southboundary), (eastboundary_1,southboundary), (eastboundary_1,northboundary), (westboundary_1,northboundary)])
-                    tif_filenames_list_1=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_1)
-                    
+
                     # the second poligon goes from -180 to the calculated eastboundary, which is at -180+something
                 
                     westboundary_2=-180
                     eastboundary_2=eastboundary
-                    
-                    model_grid_box_polygon_2=Polygon([(westboundary_2,southboundary), (eastboundary_2,southboundary), (eastboundary_2,northboundary), (westboundary_2,northboundary)])
-                    tif_filenames_list_2=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon_2)
-                    
-                    tif_filenames_list=tif_filenames_list_1+tif_filenames_list_2
-                    print(tif_filenames_list,"SONO IO 6")
                     
                     # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                     # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
@@ -377,14 +276,10 @@ def calc_sgo_parameters(latindex):
                     all_tif_data_ds2=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary_2,eastboundary_2)).rename({'longitude': 'x','latitude': 'y'})
                     all_tif_data_ds=xr.merge([all_tif_data_ds1,all_tif_data_ds2])
                     
-            
-            #print(f'Time: {time.time() - start}')
-            
+                        
             # "CENTRAL" (NOT FIRST, NOT LAST) LONGITUDE POINT (IN A "-180/+180" GRID) ("EASY" POINTS)
             if lonindex>0 and lonindex<nlon_model-1: 
-                
-                #print(f'Time: {time.time() - start} | 1')
-                
+                                
                 # i am not at the first or last model grid longitude
             
                 dlon_west=abs(lon_model[lonindex]-lon_model[lonindex-1])/2 
@@ -394,22 +289,11 @@ def calc_sgo_parameters(latindex):
                 southboundary=lat_model[latindex]-dlat_south
                 westboundary =lon_model[lonindex]-dlon_west
                 eastboundary =lon_model[lonindex]+dlon_east
-        
-                # once the boundaries of the model grid cell has been determined,
-                # determine which dem tiles to open.
-                # the DEM tiles are on a 1x1 deg regular grid 
-                model_grid_box_polygon=Polygon([(westboundary,southboundary), (eastboundary,southboundary), (eastboundary,northboundary), (westboundary,northboundary)])
-                #print(f'Time: {time.time() - start} | 1a')
-                tif_filenames_list=orofunc.get_copernicus90m_tiles_list_in_grid_box(model_grid_box_polygon)
-                #print(f'Time: {time.time() - start} | 1b')
                 
                 # here I use LatLon23 range360() function as a workaraound to get lon in 0..360 format in order to get the correct model mean orography 
                 # method=nearest allow for selection of the nearest point if the coordinates are not exact (can happen due to truncation errors).
                 operational_mean_orog_in_model_grid_box=np.float32(operational_orog_on_model_grid_da.sel(latitude=lat_model[latindex],longitude=LatLon23.Longitude(lon_model[lonindex]).range360(),method="nearest").elev.data)
-                #print(tif_filenames_list,"SONO IO 7")
-            
-                #print(f'Time: {time.time() - start} | 2')
-                
+                            
                 all_tif_data_ds=orog1kmraw.sel(latitude=slice(northboundary,southboundary),longitude=slice(westboundary,eastboundary)).rename({'longitude': 'x','latitude': 'y'})
                 
                 
@@ -443,16 +327,15 @@ def calc_sgo_parameters(latindex):
             ###########################
             ### end of calculations ###
             ###########################
-    
-                #print(f'Time: {time.time() - start} | 4')
-    
+        
     return ogwd_F1_on_model_grid,ogwd_F2_on_model_grid,ogwd_F3_on_model_grid,ogwd_hamp_on_model_grid, \
            ogwd_stddev_on_model_grid,ogwd_anisotropy_on_model_grid,ogwd_orientation_on_model_grid,ogwd_slope_on_model_grid, \
            tofd_stddev_on_model_grid,tofd_anisotropy_on_model_grid,tofd_orientation_on_model_grid,tofd_slope_on_model_grid
 
 
 
-# IMPORT PARAMETERS
+############## IMPORT PARAMETERS
+
 configname='oroglobo_parameters.yaml'
 with open(configname, 'r', encoding='utf-8') as file:
     cfg = yaml.load(file, Loader=yaml.FullLoader)
@@ -505,36 +388,29 @@ tofd_slope_on_model_grid=np.zeros((len(lat_model),len(lon_model)))
 
 # Open raw 1km orography file
 orog1kmraw = xr.open_dataset(path_data_in+netcdf_copernicus_lowres_global)
-#orog1kmraw.coords['longitude']=orog1kmraw['longitude']-180
 
 orog1kmraw.coords['longitude'] = (orog1kmraw.coords['longitude'] + 180) % 360 - 180
 orog1kmraw = orog1kmraw.sortby(orog1kmraw.longitude)
-
 orog1kmraw.load()
-#lat = data_orog.latitude.values
-#lon = data_orog.longitude.values
-#nlat=len(lat)
-#nlon=len(lon)
+
 
 
 #### TRANSFORM LONGITUDES FROM 0..360 TO -180--180 ########
-
 lon_model=lon_model-180
 
 ###########################################################
 
 import time
 
-### PARALLEL?
-
 start = time.time()
     
 from multiprocessing import Pool
 
 pool = Pool(processes=Nparal)
-####### HERE COMES THE CHANGE #######
+
+########## PARALLEL EXECUTION
+
 results = [pool.apply_async(calc_sgo_parameters, [val]) for val in range(nlat_model)]
-#results = [pool.apply_async(calc_sgo_parameters, [val]) for val in range(12)]
 for idx, val in enumerate(results):
     ogwd_F1_on_model_grid[idx,:], \
     ogwd_F2_on_model_grid[idx,:], \
@@ -549,18 +425,13 @@ for idx, val in enumerate(results):
     tofd_orientation_on_model_grid[idx,:], \
     tofd_slope_on_model_grid[idx,:] \
     = val.get()
+    
 #######
+
 pool.close()
     
     
-end = time.time()
-    
-print("time: {}\n".format(end-start))
-    
 # at the end, when all 2d arrays of parameters are filled, save netcdf on disk
-
-##### CHECK IF THERE IS THE NEED TO CHANGE -180...180 TO 0...360
-##### YES!!! GLOBO WANTS -90..+90 ; 0..360 (+ GHOST LONGITUDE POINTS...) 
 
 ### create data arrays
 ogwd_F1_on_model_grid_da=xr.DataArray(ogwd_F1_on_model_grid, coords=[('latitude', lat_model),('longitude', lon_model)])
@@ -597,3 +468,7 @@ tofd_parameters_ds['tofd_slope']=tofd_slope_on_model_grid_da
 ### save to netcdf
 ogwd_parameters_ds.to_netcdf(path_data_out+netcdf_model_grid_ogwd_params_out)
 tofd_parameters_ds.to_netcdf(path_data_out+netcdf_model_grid_tofd_params_out)
+
+end = time.time()
+    
+print("time: {}\n".format(end-start))

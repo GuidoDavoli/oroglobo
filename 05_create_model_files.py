@@ -186,7 +186,7 @@ sgo_ds=xr.merge((new_tofd_stddev_da,
 
 elev_ds=new_elev_da.to_dataset(name = 'elev')
 
-sgo_ds.to_netcdf('oroglobo_rsync/'+'sgo_'+gridname+'_oroglobo.nc',engine="h5netcdf")
-elev_ds.to_netcdf('oroglobo_rsync/'+'elev_'+gridname+'_oroglobo.nc',engine="h5netcdf")
+sgo_ds.to_netcdf(path_data_out+'sgo_'+gridname+'_oroglobo.nc',engine="h5netcdf")
+elev_ds.to_netcdf(path_data_out+'elev_'+gridname+'_oroglobo.nc',engine="h5netcdf")
 
 
