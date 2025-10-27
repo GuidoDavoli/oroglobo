@@ -12,11 +12,11 @@ OroGlobo allows to:
 
 - generate an operational model mean orography. The user can decide the level of additional smoothing needed, to meet numerical stability or to match the effective orographic resolution of the model dynamical core (Kanehama et al., 2019)
 - generate a set of unresolved orography parameters fields, consistently representing all the scales not explicitly resolved by the operational mean orography. The parameters are those typically needed by state-of-the art parameterization schemes (e.g. Lott and Miller, 1997; Beljaars et al, 2004; Van Niekerk and Vosper, 2021; Xue and Shen, 2023):
-    - unresolved orography standard deviation on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
-    - unresolved orography orientation on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
-    - unresolved orography slope on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
-    - unresolved orography anisotropy on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
-    - F1, F2, F3, hamp parameters needed by the Van Niekerk and Vosper, 2021 scheme
+- unresolved orography standard deviation on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
+- unresolved orography orientation on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
+- unresolved orography slope on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
+- unresolved orography anisotropy on scales above and below 5 km, to be used by OGWD/BLOCK and TOFD parameterizations respectively
+- F1, F2, F3, hamp parameters needed by the Van Niekerk and Vosper, 2021 scheme
 
 
 OroGlobo makes use of Copernicus GLO-90 elevation data [https://doi.org/10.5270/ESA-c5d3d65](https://doi.org/10.5270/ESA-c5d3d65) and produces output files in netcdf format. While it is designed to produce sub-grid orography files for the atmospheric model [GloboNe](https://git.isac.cnr.it/esm/globone) developed at [ISAC-CNR](https://www.isac.cnr.it/), it can be easily adapted to work with any regular latitude-longitude grid. At present, only this kind of grid is supported.
@@ -25,11 +25,11 @@ OroGlobo makes use of Copernicus GLO-90 elevation data [https://doi.org/10.5270/
 
 The user need to create a python environment with the following libraries:
 
-xarray (tested with version 2025.6.1)
-haversine (tested with version 2.8.0)
-LatLon23 (tested with version 1.0.7)
-rioxarray (tested with version 0.15.0)
-shapely (tested with version 2.0.2)
+- xarray (tested with version 2025.6.1)
+- haversine (tested with version 2.8.0)
+- LatLon23 (tested with version 1.0.7)
+- rioxarray (tested with version 0.15.0)
+- shapely (tested with version 2.0.2)
 
 other than the standard python libraries numpy, scipy, matplotlib. It also requires multiprocessing to exploit parallelism and speed up calculations.
 
