@@ -21,7 +21,7 @@ OroGlobo allows to:
 
 OroGlobo makes use of Copernicus GLO-90 elevation data [https://doi.org/10.5270/ESA-c5d3d65](https://doi.org/10.5270/ESA-c5d3d65) and produces output files in netcdf format. While it is designed to produce sub-grid orography files for the atmospheric model [GloboNe](https://git.isac.cnr.it/esm/globone) developed at [ISAC-CNR](https://www.isac.cnr.it/), it can be easily adapted to work with any regular latitude-longitude grid. At present, only this kind of grid is supported.
 
-### Installation and requirements
+## Installation and requirements
 
 The user need to create a python environment with the following libraries:
 
@@ -33,7 +33,7 @@ shapely (tested with version 2.0.2)
 
 other than the standard python libraries numpy, scipy, matplotlib. It also requires multiprocessing to exploit parallelism and speed up calculations.
 
-### How to use OroGlobo
+## How to use OroGlobo
 
 The original Copernicus GLO-90 DEM data were regridded to a 1 km grid and stored in a single netcdf file. This file is needed by OroGlobo and can be downloaded [here](https://zenodo.org/records/17414359).
 
@@ -54,8 +54,18 @@ The execution of the code is divided in 5 steps, correspongind to different scri
 The file *oroglobo_parameters.yaml* must be used to configure the behaviour of OroGlobo and to set the proper paths on the user system.
 The path to the 1km orographic dataset must be set through the *paths_in --> copernicus_lowresnc_global* parameter
 
-### License
+## References
 
+
+
+## License
+
+Copyright 2025 Guido Davoli
+
+OroGlobo is free software made available under the MIT License. For details see the LICENSE file.
+
+
+### Fincancial Support
 
 Financial support from ICSC – Centro Nazionale di Ricerca in High Performance Computing, Big Data and Quantum Computing, funded by European Union – NextGenerationEU
 
