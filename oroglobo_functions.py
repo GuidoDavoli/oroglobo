@@ -71,7 +71,6 @@ def get_copernicus90m_tiles_list_in_grid_box(grid_box_polygon):
             # BUT THERE IS NO A TRUE OVERLAP (THAT IS THERE ARE NO POINTS OF THE TILE REALLY INSIDE THE input GRID BOX).
             # THIS IS NEEDED TO AVOID ERRORS IN THE NEXT CALCULATIONS.
             
-            # TRY ALSO: INTERSECT AND !TOUCH
             if grid_box_polygon.overlaps(tile_polygon) or grid_box_polygon.contains(tile_polygon) or grid_box_polygon.within(tile_polygon):
                 
                 # convert to ""4 hemispheres" format and open the file
@@ -106,11 +105,17 @@ def get_copernicus90m_tiles_list_in_grid_box(grid_box_polygon):
 
 
 def filter_lowpass_2d_van_niekerk(lon,lat,data2d):
-    
-    # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
-    
-    ### ADAPTED FROM THE CODE PUBLICHED WITH THE PAPER BY VAN NIEKERK, 2021, QJRMS
-    
+        
+    """    
+    Adapted from the code available at:
+    van Niekerk, A. (2021). Towards a more 'scale-aware' orographic gravity wave drag parametrization [Data set]. 
+    In Quarterly Journal of the Royal Meteorological Society. Zenodo. https://doi.org/10.5281/zenodo.4727536
+
+    published with the paper:
+    van Niekerk, A. & Vosper, S.(2021) Towards a more “scale-aware” orographic gravity wave drag parametrization: Description and initial testing.
+    Q J R Meteorol Soc, 147(739), 3243–3262. Available from: https://doi.org/10.1002/qj.4126
+    """
+
     lat_rad=np.radians(lat)
     lon_rad=np.radians(lon)
     
@@ -129,7 +134,6 @@ def filter_lowpass_2d_van_niekerk(lon,lat,data2d):
     kk, ll = np.meshgrid(k,l)
     ktot = (kk**2 + ll**2)**0.5
     kmax = 2*np.pi/Lx
-    #hhat[0,0] = 0.0  # cut off "0" frequency: is like to subtract the mean value from the whole image
     if filter == 'Gaussian':
         res = np.exp(- (ktot/kmax)**2)
     if filter == 'Butterworth':
@@ -143,34 +147,29 @@ def filter_lowpass_2d_van_niekerk(lon,lat,data2d):
         res=1
     hfilt = np.real(np.fft.ifft2(hhat*res))
     
-    # SEE THE ORIGINAL CODE TO COMPUTE HAMP HERE
-    # no, computed in other function
-    
     return hfilt
 
 
 def calculate_F1_F2_F3_hamp(lon,lat,data2d,dx,dy):
     
-    # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
+    """    
+    Adapted from the code available at:
+    van Niekerk, A. (2021). Towards a more 'scale-aware' orographic gravity wave drag parametrization [Data set]. 
+    In Quarterly Journal of the Royal Meteorological Society. Zenodo. https://doi.org/10.5281/zenodo.4727536
 
-    # preso da codice van niekerk (adapted)
-    
+    published with the paper:
+    van Niekerk, A. & Vosper, S.(2021) Towards a more “scale-aware” orographic gravity wave drag parametrization: Description and initial testing.
+    Q J R Meteorol Soc, 147(739), 3243–3262. Available from: https://doi.org/10.1002/qj.4126
+    """
+
     # dx,dy are in METERS and calculated outside the function 
-    # (alternative method wrt van niekerk)
     
     hmin = data2d.min()
     hmax = data2d.max()
     ogwd_hamp = hmax - hmin
     
-    #### Commented since dx and dy are now calculated outside and received as parameters
-    #radius=6371000 # meters
-    #lat_rad=np.radians(lat)
-    #lon_rad=np.radians(lon)
     Nx = lon.shape[0]
-    My = lat.shape[0]
-    #dx = radius*np.cos(lat_rad[int(My/2.)])*np.abs(lon_rad[1] - lon_rad[0])
-    #dy = radius*np.abs(lat_rad[1] - lat_rad[0])
-    
+    My = lat.shape[0]    
     
     hhat = np.fft.fft2(data2d)*dx*dy/(4*np.pi**2)
     hhat[0,0] = 0
@@ -184,14 +183,11 @@ def calculate_F1_F2_F3_hamp(lon,lat,data2d,dx,dy):
     ogwd_F1 = np.nansum( ((4*np.pi**2 * kk**2 * np.abs(hhat)**2 * dk * dl / ktot) /area) )
     ogwd_F2 = np.nansum( ((4*np.pi**2 * kk*ll * np.abs(hhat)**2 * dk * dl / ktot) /area) )
     ogwd_F3 = np.nansum( ((4*np.pi**2 * ll**2 * np.abs(hhat)**2 * dk * dl / ktot) /area) )
-    #sd = np.nansum(((4*np.pi**2 * np.abs(hhat)**2 * dk * dl ) /area) )
     
     return ogwd_F1,ogwd_F2,ogwd_F3,ogwd_hamp
 
 def calculate_stddev_anis_orient_slope(data2d,dx,dy):
-    
-    # CONTA SE DATA2D HA DIMENSIONI LON,LAT OPPURE LAT,LON? CONTROLLA
-    
+        
     """
     SEE https://www.ecmwf.int/sites/default/files/elibrary/2021/20198-ifs-documentation-cy47r3-part-vi-physical-processes.pdf
     
@@ -231,7 +227,7 @@ def calculate_stddev_anis_orient_slope(data2d,dx,dy):
     
     if L>0:
         
-        orient_rad= 0.5*np.arctan(M/L)   # È RISP AD ASSE X cartesiano, in radianti
+        orient_rad= 0.5*np.arctan(M/L)   # with respect to cartesian x axis, in radians
         
     if L<0 and M>0:
 
@@ -281,13 +277,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     # calculate the subgrid orog, that is the deviation of the high res data from the 
     # model operational mean grid 
     subgrid_elev_all_tif_data_ds=all_tif_data_ds-operational_mean_orog_in_model_grid_box
-    """
-    # plot for debug
-    all_tif_data_ds.elev.plot(cmap='terrain',vmin=0,vmax=4000)
-    plt.show()
-    subgrid_elev_all_tif_data_ds.elev.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    """
+
     # filter out scales > 5km    
     lon=subgrid_elev_all_tif_data_ds.x.values
     lat=subgrid_elev_all_tif_data_ds.y.values
@@ -298,11 +288,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     subgrid_elev_all_tif_data_5kmfilt_lowpass_da=xr.DataArray(
         subgrid_elev_all_tif_data_5kmfilt_lowpass,
         coords=[('latitude', lat),('longitude', lon)])
-    """
-    # plot for debug
-    subgrid_elev_all_tif_data_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    """
+
     # derive scales <5km as a difference between unfiltered and filtered >5km:
     subgrid_elev_all_tif_data_5kmfilt_highpass=subgrid_elev_all_tif_data_ds.elev.data[0]-subgrid_elev_all_tif_data_5kmfilt_lowpass
     
@@ -310,11 +296,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     subgrid_elev_all_tif_data_5kmfilt_highpass_da=xr.DataArray(
         subgrid_elev_all_tif_data_5kmfilt_highpass,
         coords=[('latitude', lat),('longitude', lon)])
-    """
-    # plot for debug
-    subgrid_elev_all_tif_data_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
-    plt.show()
-    """
+
     # cut out only the point really inside the model grid box
     model_grid_box_westboundary = model_grid_box_polygon.bounds[0]
     model_grid_box_southboundary= model_grid_box_polygon.bounds[1]
@@ -323,7 +305,6 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
     subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
     subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
-    
     
     lon_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.longitude.values
     lat_inside_gridbox=subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.latitude.values
@@ -343,14 +324,6 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box(model_grid_box_polygon,
     
     dem_dlat_meters=haversine((central_lat_inside_gridbox,central_lon_inside_gridbox),(point2_lat,central_lon_inside_gridbox),unit='m')
     dem_dlon_meters=haversine((central_lat_inside_gridbox,central_lon_inside_gridbox),(central_lat_inside_gridbox,point2_lon),unit='m')
-    
-    """    
-    # plot for debug
-    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    subgrid_elev_inside_gridbox_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
-    plt.show()
-    """
     
     # from that points, calculate the orographic parameters for the grid box
     
@@ -410,13 +383,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid
     # calculate the subgrid orog, that is the deviation of the high res data from the 
     # model operational mean grid 
     subgrid_elev_all_tif_data_ds=all_tif_data_ds-operational_mean_orog_in_model_grid_box
-    """
-    # plot for debug
-    all_tif_data_ds.elev.plot(cmap='terrain',vmin=0,vmax=4000)
-    plt.show()
-    subgrid_elev_all_tif_data_ds.elev.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    """
+
     # filter out scales > 5km    
     lon=subgrid_elev_all_tif_data_ds.x.values
     lat=subgrid_elev_all_tif_data_ds.y.values
@@ -427,11 +394,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid
     subgrid_elev_all_tif_data_5kmfilt_lowpass_da=xr.DataArray(
         subgrid_elev_all_tif_data_5kmfilt_lowpass,
         coords=[('latitude', lat),('longitude', lon)])
-    """
-    # plot for debug
-    subgrid_elev_all_tif_data_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    """
+
     # derive scales <5km as a difference between unfiltered and filtered >5km:
     subgrid_elev_all_tif_data_5kmfilt_highpass=subgrid_elev_all_tif_data_ds.elev.data-subgrid_elev_all_tif_data_5kmfilt_lowpass
     
@@ -439,20 +402,7 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid
     subgrid_elev_all_tif_data_5kmfilt_highpass_da=xr.DataArray(
         subgrid_elev_all_tif_data_5kmfilt_highpass,
         coords=[('latitude', lat),('longitude', lon)])
-    """
-    # plot for debug
-    subgrid_elev_all_tif_data_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
-    plt.show()
-    """
-    # cut out only the point really inside the model grid box
-    #model_grid_box_westboundary = model_grid_box_polygon.bounds[0]
-    #model_grid_box_southboundary= model_grid_box_polygon.bounds[1]
-    #model_grid_box_eastboundary = model_grid_box_polygon.bounds[2]
-    #model_grid_box_northboundary= model_grid_box_polygon.bounds[3]
-    #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
-    #subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
-    #subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da.sel(latitude=slice(model_grid_box_northboundary,model_grid_box_southboundary),longitude=slice(model_grid_box_westboundary,model_grid_box_eastboundary))
-    
+
     subgrid_elev_inside_gridbox_5kmfilt_lowpass_da = subgrid_elev_all_tif_data_5kmfilt_lowpass_da
     subgrid_elev_inside_gridbox_5kmfilt_highpass_da=subgrid_elev_all_tif_data_5kmfilt_highpass_da
     
@@ -474,14 +424,6 @@ def calculate_ogwd_and_tofd_parameters_in_model_grid_box_from1kmorog(#model_grid
     
     dem_dlat_meters=haversine((central_lat_inside_gridbox,central_lon_inside_gridbox),(point2_lat,central_lon_inside_gridbox),unit='m')
     dem_dlon_meters=haversine((central_lat_inside_gridbox,central_lon_inside_gridbox),(central_lat_inside_gridbox,point2_lon),unit='m')
-    
-    """    
-    # plot for debug
-    subgrid_elev_inside_gridbox_5kmfilt_lowpass_da.plot(cmap='RdBu_r',vmin=-200,vmax=200)
-    plt.show()
-    subgrid_elev_inside_gridbox_5kmfilt_highpass_da.plot(cmap='RdBu_r',vmin=-20,vmax=20)
-    plt.show()
-    """
     
     # from that points, calculate the orographic parameters for the grid box
     
@@ -545,7 +487,6 @@ def calculate_mean_orog_in_grid_box(km1_grid_box_polygon,all_tif_data_ds):
     km1_grid_box_southboundary= km1_grid_box_polygon.bounds[1]
     km1_grid_box_eastboundary = km1_grid_box_polygon.bounds[2]
     km1_grid_box_northboundary= km1_grid_box_polygon.bounds[3]
-    #print(model_grid_box_westboundary,model_grid_box_eastboundary,model_grid_box_southboundary,model_grid_box_northboundary)
     all_tif_data_inside_1km_gridbox_da = all_tif_data_da.sel(latitude=slice(km1_grid_box_northboundary,km1_grid_box_southboundary),longitude=slice(km1_grid_box_westboundary,km1_grid_box_eastboundary))
     
     meanorog=np.mean(all_tif_data_inside_1km_gridbox_da.data)
